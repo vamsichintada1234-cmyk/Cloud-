@@ -3,3 +3,5 @@ assets/
 output/
 *.mp4
 *.MP4
+project/input/
+project/cache/

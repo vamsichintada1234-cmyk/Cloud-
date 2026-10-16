@@ -1,0 +1,953 @@
+{
+  "reference": {
+    "file": "/home/user/Cloud-/project/input/Row clips/Reference.MOV",
+    "width": 1080,
+    "height": 1920,
+    "aspect": "9:16",
+    "fps": 60.0,
+    "avg_fps": 35.89,
+    "vfr": true,
+    "duration": 25.548333
+  },
+  "target_duration": 26.0,
+  "time_scale": 1.017679,
+  "detection": {
+    "method": "PySceneDetect ContentDetector scores; cut = local peak >= 10.0 and >= 2.8x median of +-0.5 s",
+    "rejected_candidates": [
+      {
+        "time": 0.35,
+        "score": 11.1,
+        "ratio": 1.87
+      },
+      {
+        "time": 0.467,
+        "score": 11.3,
+        "ratio": 1.78
+      },
+      {
+        "time": 0.583,
+        "score": 11.0,
+        "ratio": 1.65
+      },
+      {
+        "time": 0.7,
+        "score": 10.5,
+        "ratio": 1.35
+      },
+      {
+        "time": 0.9,
+        "score": 10.8,
+        "ratio": 1.27
+      },
+      {
+        "time": 0.983,
+        "score": 11.4,
+        "ratio": 1.36
+      },
+      {
+        "time": 1.217,
+        "score": 11.2,
+        "ratio": 2.05
+      },
+      {
+        "time": 1.3,
+        "score": 11.5,
+        "ratio": 2.14
+      },
+      {
+        "time": 13.817,
+        "score": 13.6,
+        "ratio": 1.18
+      },
+      {
+        "time": 13.967,
+        "score": 14.6,
+        "ratio": 1.07
+      },
+      {
+        "time": 14.067,
+        "score": 14.6,
+        "ratio": 1.08
+      },
+      {
+        "time": 14.167,
+        "score": 14.8,
+        "ratio": 1.05
+      },
+      {
+        "time": 14.267,
+        "score": 14.3,
+        "ratio": 0.98
+      },
+      {
+        "time": 14.4,
+        "score": 14.4,
+        "ratio": 0.94
+      },
+      {
+        "time": 14.55,
+        "score": 16.4,
+        "ratio": 1.11
+      },
+      {
+        "time": 14.75,
+        "score": 19.1,
+        "ratio": 1.04
+      },
+      {
+        "time": 14.95,
+        "score": 21.2,
+        "ratio": 1.03
+      },
+      {
+        "time": 15.05,
+        "score": 21.1,
+        "ratio": 1.0
+      },
+      {
+        "time": 15.233,
+        "score": 21.5,
+        "ratio": 1.02
+      },
+      {
+        "time": 15.433,
+        "score": 22.2,
+        "ratio": 1.04
+      },
+      {
+        "time": 15.583,
+        "score": 22.8,
+        "ratio": 1.07
+      },
+      {
+        "time": 18.683,
+        "score": 15.0,
+        "ratio": 1.23
+      },
+      {
+        "time": 18.883,
+        "score": 14.1,
+        "ratio": 1.04
+      },
+      {
+        "time": 19.117,
+        "score": 15.6,
+        "ratio": 1.2
+      },
+      {
+        "time": 19.4,
+        "score": 12.5,
+        "ratio": 1.22
+      },
+      {
+        "time": 21.483,
+        "score": 10.1,
+        "ratio": 1.5
+      }
+    ]
+  },
+  "normal_footage_fps": 25.0,
+  "cuts": [
+    {
+      "time": 1.45,
+      "score": 39.9,
+      "ratio": 7.45,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 3.6,
+      "score": 28.5,
+      "ratio": 5.99,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 5.467,
+      "score": 22.5,
+      "ratio": 7.08,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 6.8,
+      "score": 15.9,
+      "ratio": 3.77,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 8.2,
+      "score": 18.9,
+      "ratio": 4.29,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 11.3,
+      "score": 69.3,
+      "ratio": 12.99,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 13.533,
+      "score": 24.3,
+      "ratio": 4.77,
+      "transition": "zoom",
+      "transition_duration": 0.15
+    },
+    {
+      "time": 16.0,
+      "score": 52.3,
+      "ratio": 6.41,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 18.533,
+      "score": 77.2,
+      "ratio": 14.94,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 21.567,
+      "score": 43.4,
+      "ratio": 6.23,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 23.0,
+      "score": 27.3,
+      "ratio": 5.43,
+      "transition": "cut",
+      "transition_duration": 0.0
+    },
+    {
+      "time": 23.867,
+      "score": 105.7,
+      "ratio": 20.89,
+      "transition": "cut",
+      "transition_duration": 0.0
+    }
+  ],
+  "shots": [
+    {
+      "shot": 1,
+      "start": 0.0,
+      "end": 1.45,
+      "duration": 1.45,
+      "kind": "footage",
+      "transition_in": "start",
+      "transition_in_duration": 0.0,
+      "unique_fps": 60.0,
+      "peak_unique_fps": 62.5,
+      "animated": true,
+      "speed": 1.0,
+      "zoom": [
+        [
+          0.0,
+          1.0024
+        ],
+        [
+          0.046,
+          1.0115
+        ],
+        [
+          0.092,
+          1.0306
+        ],
+        [
+          0.1379,
+          1.0592
+        ],
+        [
+          0.1839,
+          1.0948
+        ],
+        [
+          0.2299,
+          1.1346
+        ],
+        [
+          0.2759,
+          1.1751
+        ],
+        [
+          0.3218,
+          1.2144
+        ],
+        [
+          0.3678,
+          1.2503
+        ],
+        [
+          0.4138,
+          1.2795
+        ],
+        [
+          0.4598,
+          1.2996
+        ],
+        [
+          0.5057,
+          1.3093
+        ],
+        [
+          0.5517,
+          1.3128
+        ],
+        [
+          0.5977,
+          1.3126
+        ],
+        [
+          0.6437,
+          1.3118
+        ],
+        [
+          0.6897,
+          1.3117
+        ],
+        [
+          0.7356,
+          1.3125
+        ],
+        [
+          0.7816,
+          1.3148
+        ],
+        [
+          0.8276,
+          1.3165
+        ],
+        [
+          0.8736,
+          1.3165
+        ],
+        [
+          0.9195,
+          1.3143
+        ],
+        [
+          0.9655,
+          1.3122
+        ]
+      ],
+      "zoom_anchor": [
+        0.7,
+        0.4278720168760191
+      ],
+      "out_start": 0.0,
+      "out_end": 1.476,
+      "out_duration": 1.476
+    },
+    {
+      "shot": 2,
+      "start": 1.45,
+      "end": 3.6,
+      "duration": 2.15,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 24.6,
+      "peak_unique_fps": 25.0,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 1.476,
+      "out_end": 3.664,
+      "out_duration": 2.188
+    },
+    {
+      "shot": 3,
+      "start": 3.6,
+      "end": 5.467,
+      "duration": 1.867,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 25.2,
+      "peak_unique_fps": 27.5,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 3.664,
+      "out_end": 5.564,
+      "out_duration": 1.9
+    },
+    {
+      "shot": 4,
+      "start": 5.467,
+      "end": 6.8,
+      "duration": 1.333,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 24.7,
+      "peak_unique_fps": 27.5,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 5.564,
+      "out_end": 6.92,
+      "out_duration": 1.357
+    },
+    {
+      "shot": 5,
+      "start": 6.8,
+      "end": 8.2,
+      "duration": 1.4,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 25.0,
+      "peak_unique_fps": 27.5,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 6.92,
+      "out_end": 8.345,
+      "out_duration": 1.425
+    },
+    {
+      "shot": 6,
+      "start": 8.2,
+      "end": 11.3,
+      "duration": 3.1,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 60.3,
+      "peak_unique_fps": 62.5,
+      "animated": true,
+      "speed": 1.0,
+      "zoom": [
+        [
+          0.0,
+          1.0452
+        ],
+        [
+          0.0215,
+          1.0446
+        ],
+        [
+          0.043,
+          1.0439
+        ],
+        [
+          0.0645,
+          1.0419
+        ],
+        [
+          0.086,
+          1.0394
+        ],
+        [
+          0.1075,
+          1.0358
+        ],
+        [
+          0.129,
+          1.0311
+        ],
+        [
+          0.1505,
+          1.0239
+        ],
+        [
+          0.172,
+          1.0164
+        ],
+        [
+          0.1935,
+          1.0086
+        ],
+        [
+          0.2151,
+          1.004
+        ],
+        [
+          0.2366,
+          1.0037
+        ],
+        [
+          0.2581,
+          1.0111
+        ],
+        [
+          0.2796,
+          1.0273
+        ],
+        [
+          0.3011,
+          1.0523
+        ],
+        [
+          0.3226,
+          1.0861
+        ],
+        [
+          0.3441,
+          1.1263
+        ],
+        [
+          0.3656,
+          1.1697
+        ],
+        [
+          0.3871,
+          1.2129
+        ],
+        [
+          0.4086,
+          1.2561
+        ],
+        [
+          0.4301,
+          1.2978
+        ],
+        [
+          0.4516,
+          1.3351
+        ],
+        [
+          0.4731,
+          1.3692
+        ],
+        [
+          0.4946,
+          1.3995
+        ],
+        [
+          0.5161,
+          1.4271
+        ],
+        [
+          0.5376,
+          1.4441
+        ],
+        [
+          0.5591,
+          1.4495
+        ],
+        [
+          0.5806,
+          1.4477
+        ],
+        [
+          0.6022,
+          1.453
+        ],
+        [
+          0.6237,
+          1.463
+        ],
+        [
+          0.6452,
+          1.4722
+        ],
+        [
+          0.6667,
+          1.4734
+        ],
+        [
+          0.6882,
+          1.4728
+        ],
+        [
+          0.7097,
+          1.4761
+        ],
+        [
+          0.7312,
+          1.4807
+        ],
+        [
+          0.7527,
+          1.4853
+        ],
+        [
+          0.7742,
+          1.4884
+        ],
+        [
+          0.7957,
+          1.4936
+        ],
+        [
+          0.8172,
+          1.4986
+        ],
+        [
+          0.8387,
+          1.4999
+        ],
+        [
+          0.8602,
+          1.4893
+        ],
+        [
+          0.8817,
+          1.4806
+        ],
+        [
+          0.9032,
+          1.463
+        ],
+        [
+          0.9247,
+          1.4713
+        ],
+        [
+          0.9462,
+          1.475
+        ],
+        [
+          0.9677,
+          1.49
+        ],
+        [
+          0.9892,
+          1.4878
+        ]
+      ],
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 8.345,
+      "out_end": 11.5,
+      "out_duration": 3.155
+    },
+    {
+      "shot": 7,
+      "start": 11.3,
+      "end": 13.533,
+      "duration": 2.233,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 27.0,
+      "peak_unique_fps": 35.0,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 11.5,
+      "out_end": 13.772,
+      "out_duration": 2.272
+    },
+    {
+      "shot": 8,
+      "start": 13.533,
+      "end": 16.0,
+      "duration": 2.467,
+      "kind": "footage",
+      "transition_in": "zoom",
+      "transition_in_duration": 0.15,
+      "unique_fps": 20.6,
+      "peak_unique_fps": 22.5,
+      "animated": false,
+      "speed": 0.8,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 13.772,
+      "out_end": 16.283,
+      "out_duration": 2.511
+    },
+    {
+      "shot": 9,
+      "start": 16.0,
+      "end": 18.533,
+      "duration": 2.533,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 24.9,
+      "peak_unique_fps": 25.0,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 16.283,
+      "out_end": 18.861,
+      "out_duration": 2.578
+    },
+    {
+      "shot": 10,
+      "start": 18.533,
+      "end": 21.567,
+      "duration": 3.034,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 25.1,
+      "peak_unique_fps": 25.0,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 18.861,
+      "out_end": 21.948,
+      "out_duration": 3.088
+    },
+    {
+      "shot": 11,
+      "start": 21.567,
+      "end": 23.0,
+      "duration": 1.433,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 59.2,
+      "peak_unique_fps": 60.0,
+      "animated": true,
+      "speed": 1.0,
+      "zoom": [
+        [
+          0.0,
+          1.0243
+        ],
+        [
+          0.0579,
+          1.1041
+        ],
+        [
+          0.1044,
+          1.2274
+        ],
+        [
+          0.151,
+          1.334
+        ],
+        [
+          0.1975,
+          1.385
+        ],
+        [
+          0.244,
+          1.3927
+        ],
+        [
+          0.2905,
+          1.3962
+        ],
+        [
+          0.3371,
+          1.4009
+        ],
+        [
+          0.3836,
+          1.4111
+        ],
+        [
+          0.4301,
+          1.4266
+        ],
+        [
+          0.4766,
+          1.4452
+        ],
+        [
+          0.5231,
+          1.4695
+        ],
+        [
+          0.5697,
+          1.4985
+        ],
+        [
+          0.6162,
+          1.5293
+        ],
+        [
+          0.6627,
+          1.5538
+        ],
+        [
+          0.7092,
+          1.5696
+        ],
+        [
+          0.7558,
+          1.5835
+        ],
+        [
+          0.8023,
+          1.5951
+        ],
+        [
+          0.8488,
+          1.6024
+        ],
+        [
+          0.8953,
+          1.6063
+        ],
+        [
+          0.9418,
+          1.6096
+        ],
+        [
+          0.9884,
+          1.6127
+        ]
+      ],
+      "zoom_anchor": [
+        0.5672545376450836,
+        0.3
+      ],
+      "out_start": 21.948,
+      "out_end": 23.407,
+      "out_duration": 1.458
+    },
+    {
+      "shot": 12,
+      "start": 23.0,
+      "end": 23.867,
+      "duration": 0.867,
+      "kind": "footage",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 25.5,
+      "peak_unique_fps": 25.0,
+      "animated": false,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "out_start": 23.407,
+      "out_end": 24.289,
+      "out_duration": 0.882
+    },
+    {
+      "shot": 13,
+      "start": 23.867,
+      "end": 25.548,
+      "duration": 1.681,
+      "kind": "text_card",
+      "transition_in": "cut",
+      "transition_in_duration": 0.0,
+      "unique_fps": 59.4,
+      "peak_unique_fps": 60.0,
+      "animated": true,
+      "speed": 1.0,
+      "zoom": null,
+      "zoom_anchor": [
+        0.5,
+        0.5
+      ],
+      "card": {
+        "rows": [
+          {
+            "box": [
+              376,
+              868,
+              700,
+              936
+            ],
+            "color": "#00C700"
+          },
+          {
+            "box": [
+              358,
+              962,
+              721,
+              1026
+            ],
+            "color": "#FFFFFF"
+          }
+        ],
+        "scale_end": 1.198,
+        "anchor": [
+          0.514,
+          0.473
+        ]
+      },
+      "out_start": 24.289,
+      "out_end": 26.0,
+      "out_duration": 1.711
+    }
+  ],
+  "look": {
+    "tone_curve_raw_to_ref": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.027,
+        0.019
+      ],
+      [
+        0.039,
+        0.033
+      ],
+      [
+        0.075,
+        0.069
+      ],
+      [
+        0.137,
+        0.202
+      ],
+      [
+        0.494,
+        0.612
+      ],
+      [
+        0.729,
+        0.782
+      ],
+      [
+        0.804,
+        0.839
+      ],
+      [
+        0.831,
+        0.861
+      ],
+      [
+        0.867,
+        0.887
+      ],
+      [
+        1.0,
+        1.0
+      ]
+    ]
+  }
+}

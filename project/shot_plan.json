@@ -1,0 +1,82 @@
+{
+  "note": "Hand-verified in-points (seconds into each raw clip). Used only while the clips below are unchanged; run with --auto to ignore.",
+  "clips": {
+    "01": 499321049,
+    "02": 259459898,
+    "03": 116444204
+  },
+  "shots": [
+    {
+      "shot": 1,
+      "clip": "01",
+      "start": 9.95,
+      "note": "shows the BUNNY print to camera, then lowers it and waves (ref: print to camera + hand wave)"
+    },
+    {
+      "shot": 2,
+      "clip": "01",
+      "start": 30.0,
+      "note": "holds the black tee up high, spread out"
+    },
+    {
+      "shot": 3,
+      "clip": "01",
+      "start": 52.4,
+      "note": "seated at the press, lining up the print on the tee"
+    },
+    {
+      "shot": 4,
+      "clip": "01",
+      "start": 65.5,
+      "note": "reaches up and pulls the press handle down"
+    },
+    {
+      "shot": 5,
+      "clip": "01",
+      "start": 79.3,
+      "note": "lifts the press handle to open it"
+    },
+    {
+      "shot": 6,
+      "clip": "01",
+      "start": 84.0,
+      "note": "peels the film, smiles at camera, ends as the tee swings into the lens"
+    },
+    {
+      "shot": 7,
+      "clip": "02",
+      "start": 0.4,
+      "note": "wide flat-lay of the finished tee"
+    },
+    {
+      "shot": 8,
+      "clip": "02",
+      "start": 12.0,
+      "note": "tilted close-up of the print (0.8x)"
+    },
+    {
+      "shot": 9,
+      "clip": "02",
+      "start": 38.6,
+      "note": "rotated print, camera pulling back"
+    },
+    {
+      "shot": 10,
+      "clip": "03",
+      "start": 7.7,
+      "note": "holds the tee by his face, camera moves in to the hand on the fabric"
+    },
+    {
+      "shot": 11,
+      "clip": "03",
+      "start": 12.6,
+      "note": "talking to camera, pointing at himself with the tee"
+    },
+    {
+      "shot": 12,
+      "clip": "03",
+      "start": 15.35,
+      "note": "laughs and turns away"
+    }
+  ]
+}
