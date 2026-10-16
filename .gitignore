@@ -4,3 +4,8 @@ output/
 *.mp4
 *.MP4
 node_modules/
+.venv/
+edit/work/
+edit/hf/scratch/
+.hyperframes/
+__pycache__/

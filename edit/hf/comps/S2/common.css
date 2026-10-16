@@ -1,0 +1,21 @@
+@font-face { font-family: "Poppins"; font-weight: 400; src: url("poppins-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Poppins"; font-weight: 700; src: url("poppins-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; src: url("instrument-serif-latin-400-italic.woff2") format("woff2"); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; }
+#root { position: relative; width: 1080px; height: 1920px; overflow: hidden; font-family: "Poppins", sans-serif; color: #111111; }
+:root {
+  --shadow: 0 60px 120px rgba(24,24,32,0.16), 0 24px 48px rgba(24,24,32,0.10), 0 4px 10px rgba(24,24,32,0.06);
+  --terra: #D97757; --terra-text: #B25730; --band: #FBEEE8; --green: #34C759; --red: #FF3B30; --ink: #111111;
+}
+.bg { position: absolute; inset: 0; background: radial-gradient(circle farthest-corner at 50% 36%, #FFFFFF 0%, #F3F3F0 100%); }
+.world { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; transform-origin: 0 0; will-change: transform, filter; }
+.el { position: absolute; }
+.elev { box-shadow: var(--shadow); background: #FFFFFF; }
+.r-media { border-radius: 32.4px; }   /* 3% of 1080 */
+.r-doc { border-radius: 40px; }
+.r-block { border-radius: 72px; }
+.r-phone { border-radius: 84px; }
+.t-title { font-size: 96px; font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+.t-sub { font-size: 52px; font-weight: 700; line-height: 1.15; }
+.t-body { font-size: 30px; font-weight: 400; line-height: 1.35; }

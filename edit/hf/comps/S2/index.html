@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080, height=1920" />
+<script src="gsap.min.js"></script>
+<script src="engine.js"></script>
+<link rel="stylesheet" href="common.css" />
+<style>
+  /* phone: 470 x 900, bottom edge at y = 1215 (visual-composition safe area 1200-1230) */
+  #phone { left: 305px; top: 315px; width: 470px; height: 900px; padding: 16px; }
+  #screen { position: relative; width: 100%; height: 100%; border-radius: 68px; overflow: hidden;
+            background: linear-gradient(170deg, #E58A6C 0%, #D97757 46%, #FBEEE8 46.2%, #FBEEE8 100%); }
+  #screen .notch { position: absolute; left: 50%; top: 18px; width: 120px; height: 30px; margin-left: -60px; border-radius: 20px; background: rgba(255,255,255,0.55); }
+  #screen .ttl { position: absolute; left: 0; right: 0; top: 120px; text-align: center; color: #fff; }
+  #screen .ttl .t-title { font-size: 96px; }
+  #screen .who { position: absolute; left: 34px; right: 34px; bottom: 120px; display: flex; gap: 20px; align-items: center; }
+  #screen .av { width: 78px; height: 78px; border-radius: 50%; background: #fff; display: grid; place-items: center; flex: none; }
+  #screen .name { font-size: 30px; font-weight: 700; color: var(--ink); }
+  #screen .name span { display: block; font-weight: 400; color: var(--terra-text); }
+  #play { left: 50%; top: 50%; width: 156px; height: 156px; margin: -78px 0 0 -78px; border-radius: 50%; background: #fff;
+          box-shadow: var(--shadow); display: grid; place-items: center; }
+  #prog { position: absolute; left: 34px; right: 34px; bottom: 60px; height: 12px; border-radius: 6px; background: rgba(217,119,87,0.25); overflow: hidden; }
+  #progfill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: var(--terra); transform-origin: 0 50%; }
+  #cursor { left: 0; top: 0; width: 64px; height: 64px; }
+  #ripple { left: 50%; top: 50%; width: 156px; height: 156px; margin: -78px 0 0 -78px; border-radius: 50%; border: 6px solid var(--terra); }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="S2" data-start="0" data-duration="1.30" data-width="1080" data-height="1920">
+  <div id="scene" class="clip" data-start="0" data-duration="1.30" data-track-index="0" style="position:absolute;inset:0">
+    <div class="bg"></div>
+    <div class="world" id="world">
+      <div class="el elev r-phone" id="phone">
+        <div id="screen">
+          <div class="notch"></div>
+          <div class="ttl"><div class="t-title">MOQ?</div><div class="t-body" style="font-weight:700">Fabro</div></div>
+          <div class="who"><div class="av"><svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="15" r="9" fill="#D97757"/><path d="M5 42c2-10 9-15 17-15s15 5 17 15z" fill="#D97757"/></svg></div>
+            <div class="name">Full video<span>Tap to watch</span></div></div>
+          <div id="prog"><div id="progfill"></div></div>
+          <div class="el" id="ripple"></div>
+          <div class="el" id="play"><svg width="64" height="64" viewBox="0 0 64 64"><path d="M20 10 L54 32 L20 54 Z" fill="#D97757" stroke="#D97757" stroke-width="6" stroke-linejoin="round"/></svg></div>
+        </div>
+      </div>
+      <svg class="el" id="cursor" viewBox="0 0 64 64"><path d="M10 4 L10 52 L22 41 L31 60 L40 56 L31 37 L47 37 Z" fill="#fff" stroke="#111" stroke-width="4" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</div>
+<script>
+  const { track, aim, camSpeed, sigmaFor, bake, blurCss, E } = HF;
+  const D = 1.30, tl = gsap.timeline({ paused: true });
+  gsap.set("#world", { transformOrigin: "0 0" });
+  gsap.set("#phone", { transformOrigin: "50% 100%" });
+  // Environment camera: gentle drift (scale +0.015) until 0.55, then still while the window animates.
+  const cam = track([[0, aim(540, 765, 540, 765, 1)], [0.55, aim(540, 765, 540, 765, 1.015), "sine.inOut"]]);
+  const TAP = 0.62;   // tap on play, just before "video" (3.90 out = 0.75 local)
+  // cursor path (world coords of its tip) -> play button centre (540, 765)
+  const cur = track([[0, [760, 1080]], [0.18, [760, 1080]], [0.56, [540, 765], "power2.inOut"]]);
+  const win = track([[TAP + 0.04, 1], [TAP + 0.04 + 0.55, 1.15, "power2.inOut"]]);   // window 1.0 -> 1.15 in 0.55 s
+  bake(tl, D, t => {
+    const c = cam(t), sig = sigmaFor(camSpeed(cam, t, 540, 765));
+    const p = cur(t), press = t >= TAP && t < TAP + 0.08 ? 0.86 : 1;
+    const after = Math.max(0, t - TAP);
+    const rp = Math.min(1, after / 0.35);
+    return {
+      "#world": { x: c[0], y: c[1], scale: c[2], filter: blurCss(sig) },
+      "#cursor": { x: p[0] - 10, y: p[1] - 4, scale: press, opacity: t < TAP + 0.25 ? 1 : Math.max(0, 1 - (t - TAP - 0.25) / 0.12) },
+      "#phone": { scale: win(t) },
+      "#play": { scale: t < TAP ? 1 : (t < TAP + 0.08 ? 0.9 : 0.9 + 0.1 * E["power2.out"](Math.min(1, (t - TAP - 0.08) / 0.1))) * (1 - E["power2.in"](Math.min(1, Math.max(0, t - TAP - 0.1) / 0.16))),
+                 opacity: t < TAP + 0.1 ? 1 : Math.max(0, 1 - (t - TAP - 0.1) / 0.16) },
+      "#ripple": { scale: 1 + 0.6 * E["power2.out"](rp), opacity: t < TAP ? 0 : (1 - rp) * 0.9 },
+      "#progfill": { scaleX: t < TAP + 0.08 ? 0 : Math.min(0.32, (t - TAP - 0.08) * 0.55) },
+    };
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["S2"] = tl;
+  tl.seek(0);
+</script>
+</body>
+</html>

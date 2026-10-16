@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080, height=1920" />
+<script src="gsap.min.js"></script>
+<script src="engine.js"></script>
+<link rel="stylesheet" href="common.css" />
+<style>
+  html, body { background: transparent; }
+  /* COVER (frame 0 only): Poppins Bold 110 px, black, rounded white box, two lines at y = 262..603 */
+  #cover { left: 50%; top: 262px; height: 341px; transform: translateX(-50%); padding: 0 50px; border-radius: 30px; background: #fff;
+           box-shadow: 0 24px 60px rgba(24,24,32,0.16), 0 4px 12px rgba(24,24,32,0.08);
+           display: flex; flex-direction: column; justify-content: center; align-items: center; white-space: nowrap;
+           font-size: 110px; font-weight: 700; line-height: 1.12; letter-spacing: -0.02em; color: #000; }
+  /* CAPTIONS: Poppins Bold 74 px white + 10 px black outline; highlight = Instrument Serif bold italic #FFFF00 */
+  .cap { position: absolute; left: 0; width: 1080px; height: 0; opacity: 0; }
+  .cap > div { position: absolute; left: 60px; right: 60px; top: 0; transform: translateY(-50%); text-align: center;
+               font-size: 74px; line-height: 1.1; white-space: nowrap; }
+  .cap span { display: inline-block; margin: 0 6px; }
+  .cap .nm { font-family: "Poppins"; font-weight: 700; }
+  .cap .hl { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-size: 84px; letter-spacing: 0.005em; }
+  .cap .stroke span { color: #000; -webkit-text-stroke: 20px #000; }
+  .cap .fill .nm { color: #fff; }
+  .cap .fill .hl { color: #FFFF00; -webkit-text-stroke: 2.2px #FFFF00; }   /* synthetic bold weight */
+  /* CTA card area: x 43, y 1344, 994 x 276; single comment box, transparent around it */
+  #cta { left: 43px; top: 1344px; width: 994px; height: 276px; opacity: 0; }
+  #box { position: absolute; left: 0; right: 0; top: 48px; height: 180px; border-radius: 90px; background: #fff; box-shadow: var(--shadow);
+         display: flex; align-items: center; padding: 0 26px 0 30px; gap: 26px; }
+  #box .av { width: 120px; height: 120px; border-radius: 50%; background: #ECEAE5; flex: none; display: grid; place-items: center; overflow: hidden; }
+  #field { flex: 1; height: 112px; border-radius: 56px; background: #F6F5F2; display: flex; align-items: center; padding: 0 34px; position: relative; }
+  #ph { position: absolute; left: 34px; font-size: 30px; color: #8A8A85; }
+  #typed { font-size: 52px; font-weight: 700; color: var(--ink); letter-spacing: 0.01em; }
+  #caret { width: 5px; height: 58px; background: var(--terra); margin-left: 6px; border-radius: 3px; }
+  #post { position: relative; width: 178px; height: 112px; border-radius: 56px; background: var(--terra); color: #fff; flex: none;
+          font-size: 34px; font-weight: 700; display: grid; place-items: center; }
+  #post .ok { position: absolute; inset: 0; border-radius: 56px; background: var(--green); display: grid; place-items: center; opacity: 0; }
+  #ptr { left: 0; top: 0; width: 64px; height: 64px; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="OV" data-start="0" data-duration="%%END%%" data-width="1080" data-height="1920">
+  <div id="layer" class="clip" data-start="0" data-duration="%%END%%" data-track-index="0" style="position:absolute;inset:0">
+    <div class="el" id="cover"><div>Is Fabro's MOQ</div><div>really high?</div></div>
+    %%CAPTIONS%%
+    <div class="el" id="cta">
+      <div id="box">
+        <div class="av"><svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="46" r="21" fill="#B9B6AE"/><path d="M20 112c4-26 20-38 40-38s36 12 40 38z" fill="#B9B6AE"/></svg></div>
+        <div id="field"><div id="ph">Add a comment…</div><div id="typed"></div><div id="caret"></div></div>
+        <div id="post">Post<div class="ok"><svg width="58" height="58" viewBox="0 0 58 58"><path d="M12 30 L24 42 L47 17" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+      </div>
+      <svg class="el" id="ptr" viewBox="0 0 64 64"><path d="M10 4 L10 52 L22 41 L31 60 L40 56 L31 37 L47 37 Z" fill="#fff" stroke="#111" stroke-width="4" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</div>
+<script>
+  const { bake, E, track } = HF;
+  const D = %%END%%, tl = gsap.timeline({ paused: true });
+  const BLOCKS = %%BLOCKS%%;
+  const C0 = 4.45, WORD = "MOQ", KEYS = [0.10, 0.20, 0.30];     // CTA: typing, caret blink, click on Post
+  const CLICK = C0 + 0.86;
+  const ptr = track([[C0 + 0.40, [560, 250]], [C0 + 0.80, [880, 140], "power2.inOut"]]);
+  const typed = {};
+  bake(tl, D, t => {
+    const st = { "#cover": { opacity: t < 1 / 120 ? 1 : 0 } };          // frame 0 only
+    BLOCKS.forEach(([a, b], i) => { st["#cap" + i] = { opacity: (t >= a - 1 / 480 && t < b - 1 / 480) ? 1 : 0 }; });
+    const lt = t - C0;
+    st["#cta"] = { opacity: lt >= -1e-6 ? 1 : 0 };
+    const n = KEYS.filter(k => lt >= k).length;
+    st["#typed"] = { textContent: WORD.slice(0, n) };
+    st["#ph"] = { opacity: n === 0 ? 1 : 0 };
+    const blinkOn = lt < 0.30 ? true : Math.floor((lt - 0.30) / 0.25) % 2 === 1 ? false : true;
+    st["#caret"] = { opacity: blinkOn ? 1 : 0 };
+    const p = ptr(t);
+    st["#ptr"] = { x: p[0], y: p[1], opacity: lt < 0.40 ? 0 : 1, scale: (t >= CLICK && t < CLICK + 0.08) ? 0.86 : 1 };
+    st["#post"] = { scale: (t >= CLICK && t < CLICK + 0.08) ? 0.93 : 1 };
+    st["#post .ok"] = { opacity: t >= CLICK + 0.08 ? Math.min(1, (t - CLICK - 0.08) / 0.1) : 0 };
+    return st;
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["OV"] = tl;
+  tl.seek(0);
+</script>
+</body>
+</html>
