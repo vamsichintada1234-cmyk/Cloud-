@@ -601,41 +601,55 @@ def build_edit(ref_an, info, plan, clips, clip_info, music, args, curve):
 
 
 def decode_mono(path, sr):
-    """Decode with ffmpeg itself, so analysis and mixing share one timeline (mp3 encoder delay etc.)."""
-    raw = run(["ffmpeg", "-v", "error", "-i", path, "-map", "0:a:0", "-af", "asetpts=PTS-STARTPTS", "-ac", "1", "-ar", str(sr),
+    """Decode with ffmpeg itself, on a sample-counted timeline - the same one the mixing chain uses."""
+    raw = run(["ffmpeg", "-v", "error", "-i", path, "-map", "0:a:0", "-af", "asetpts=N/SR/TB", "-ac", "1", "-ar", str(sr),
                "-f", "f32le", "-"], binary=True)
     return np.frombuffer(raw, np.float32)
 
 
-def music_offset(music, cut_times, dur):
-    """Where to start the track: skip leading silence, then prefer the offset that puts the track's energy
-    surges (drops) and beats on the edit's cuts. Returns (offset, notes)."""
-    sr, hop, win = 22050, 128, 1024
+def track_levels(music, sr=22050, hop=128):
+    """Mono samples, per-hop level (dB), and where the track's sound starts. Silence = 40 dB under its peak."""
     y = decode_mono(music, sr)
-    total, n = len(y) / sr, len(y) // hop
-    t = np.arange(n) * hop / sr
+    n = len(y) // hop
+    if n < 8:
+        sys.exit(f"music file {music} has no decodable audio")
     db = 10 * np.log10((y[:n * hop].reshape(n, hop) ** 2).mean(1) + 1e-12)
-    loud = np.where(db > db.max() - 40)[0]
-    lead = float(t[loud[0]]) if len(loud) else 0.0
-    if total < lead + dur:  # too short: it gets looped from the first sound
-        return lead, dict(track=round(total, 3), leading_silence=round(lead, 3), looped=True)
+    floor = db.max() - 40
+    loud = np.where(db > floor)[0]
+    silent = bool(db.max() <= -70 or not len(loud))
+    lead = 0.0 if silent else float(loud[0] * hop / sr)
+    end = len(y) / sr if silent else min(len(y) / sr, (loud[-1] + 1) * hop / sr + 0.25)   # last sound + reverb tail
+    return dict(y=y, sr=sr, hop=hop, n=n, t=np.arange(n) * hop / sr, db=db, floor=floor, total=len(y) / sr,
+                lead=lead, end=end, silent=silent)
+
+
+def music_offset(music, cut_times, dur):
+    """Where to start the track: skip leading silence, avoid silent stretches, then prefer the offset that puts the
+    track's drops (sustained energy surges) within ~1 frame of a cut, with beats on cuts as tie-breaker."""
+    L = track_levels(music)
+    y, sr, hop, n, t, db, total, lead = (L[k] for k in ("y", "sr", "hop", "n", "t", "db", "total", "lead"))
+    notes = dict(track=round(total, 3), leading_silence=round(lead, 3), sound_end=round(L["end"], 3))
+    if L["silent"]:
+        return 0.0, dict(notes, offset=0.0, silent=True)
+    if L["end"] - lead < dur:  # the sounding part is shorter than the edit: it loops (first sound -> last sound)
+        return lead, dict(notes, offset=round(lead, 3), looped=True)
+    win = 1024
     frames = np.lib.stride_tricks.sliding_window_view(np.pad(y, (win // 2, win // 2)), win)[::hop][:n] * np.hanning(win).astype(np.float32)
-    mag = np.log1p(10 * np.abs(np.fft.rfft(frames, axis=1)))
-    onset = np.r_[0, np.maximum(np.diff(mag, axis=0), 0).sum(1)]
+    onset = np.r_[0, np.maximum(np.diff(np.log1p(10 * np.abs(np.fft.rfft(frames, axis=1))), axis=0), 0).sum(1)]
     onset /= np.percentile(onset, 99) + 1e-9
-    # energy surge = mean level of the next 0.75 s minus the previous 0.75 s; levels floored 40 dB under the peak, and
-    # the music's own entrance out of leading silence doesn't count
-    W = int(0.75 * sr / hop)
-    c = np.r_[0, np.cumsum(np.maximum(db, db.max() - 40))]
+    c = np.r_[0, np.cumsum(np.maximum(db, L["floor"]))]
     i = np.arange(n)
-    nxt = (c[np.minimum(i + W, n)] - c[i]) / np.maximum(np.minimum(i + W, n) - i, 1)
-    prv = (c[i] - c[np.maximum(i - W, 0)]) / np.maximum(i - np.maximum(i - W, 0), 1)
-    rise = np.where(t - W * hop / sr >= lead + 0.05, np.maximum(nxt - prv, 0), 0)
-    drops = []  # surges of >= 3 dB, at least 1 s apart, strongest first
+    def surge(sec):  # mean level of the next `sec` minus the previous `sec` (0 until a full window of sound precedes)
+        W = max(1, int(sec * sr / hop))
+        nxt = (c[np.minimum(i + W, n)] - c[i]) / np.maximum(np.minimum(i + W, n) - i, 1)
+        prv = (c[i] - c[np.maximum(i - W, 0)]) / np.maximum(i - np.maximum(i - W, 0), 1)
+        return np.where(t - sec >= lead + 0.05, np.maximum(nxt - prv, 0), 0)
+    rise, sustained = surge(0.75), surge(2.0)
+    drops = []  # >= 3 dB surges that stay up (>= 2 dB over 2 s windows, so single loud beats don't count), 1 s apart
     for k in np.argsort(-rise):
         if rise[k] < 3 or len(drops) == 4:
             break
-        if all(abs(t[k] - t[d]) > 1.0 for d in drops):
+        if sustained[max(0, k - 8):k + 9].max() >= 2 and all(abs(t[k] - t[d]) > 1.0 for d in drops):
             drops.append(int(k))
     near = lambda a, x: a[np.clip(np.round(x * sr / hop).astype(int)[:, None] + np.arange(-2, 3), 0, n - 1)].max(1)
     cuts = np.asarray(cut_times, float)
@@ -644,15 +658,36 @@ def music_offset(music, cut_times, dur):
     for k in drops:                                                          # drops on cuts, within ~1 frame
         hit = np.exp(-(((cuts[None, :] + offs[:, None]) - t[k]) / 0.02) ** 2).sum(1)
         score += 3 * rise[k] / rise[drops[0]] * hit
+    # silence inside the window: small cost per second, prohibitive if the edit would open silent or go silent > 1.5 s
+    sil = np.r_[0, np.cumsum(db <= L["floor"])] * hop / sr
+    idx = lambda x: np.clip(np.round(x * sr / hop).astype(int), 0, n)
+    score -= 4 * (sil[idx(offs + dur)] - sil[idx(offs)]) / dur
+    score -= 10 * ((sil[idx(offs + 1.0)] - sil[idx(offs)]) > 0.3)
+    q = np.r_[False, db <= L["floor"], False].astype(int)
+    for a, b in zip(np.where(np.diff(q) == 1)[0], np.where(np.diff(q) == -1)[0]):
+        if (b - a) * hop / sr > 1.5:
+            ov = np.minimum(offs + dur, b * hop / sr) - np.maximum(offs, a * hop / sr)
+            score -= 10 * (ov > 1.5)
     o = float(offs[int(np.argmax(score))])
-    notes = dict(track=round(total, 3), leading_silence=round(lead, 3), offset=round(o, 3), looped=False)
-    drop = drops[0] if drops else None
-    land = t[drop] - o if drops else -1
+    notes.update(offset=round(o, 3))
+    land = t[drops[0]] - o if drops else -1
     if drops and 0 <= land <= dur:
         k = int(np.argmin(np.abs(cuts - land)))
-        notes.update(drop_in_track=round(float(t[drop]), 3), drop_in_edit=round(float(land), 3),
+        notes.update(drop_in_track=round(float(t[drops[0]]), 3), drop_in_edit=round(float(land), 3),
                      nearest_cut=round(float(cuts[k]), 3), drop_to_cut_ms=round(float(land - cuts[k]) * 1000))
     return o, notes
+
+
+def music_chain(start, dur, lead, end, looped):
+    """Sample-accurate trim of `dur` seconds from `start`; when looped, only the sounding part (lead..end) repeats."""
+    base = "asetpts=N/SR/TB,aresample=48000,aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo"
+    if not looped:
+        trim = f"atrim=start={start:.4f}:duration={dur}"
+    else:
+        span = end - lead
+        trim = (f"atrim=start={lead:.4f}:end={end:.4f},asetpts=N/SR/TB,aloop=loop=-1:size={int(span * 48000)},"
+                f"atrim=start={(max(start, lead) - lead) % span:.4f}:duration={dur}")
+    return f"{base},{trim},asetpts=N/SR/TB,afade=t=in:st=0:d=0.5,afade=t=out:st={dur - 1.5}:d=1.5"
 
 
 def loudness(path):
@@ -663,33 +698,66 @@ def loudness(path):
     return dict(integrated_lufs=num("I:"), true_peak_dbfs=num("Peak:"))
 
 
-def mix_music(video, music, dur, out, start=0.0):
-    chain = (f"asetpts=PTS-STARTPTS,atrim=start={start:.4f}:end={start + dur:.4f},asetpts=PTS-STARTPTS,"
-             f"aformat=sample_rates=48000:channel_layouts=stereo,afade=t=in:st=0:d=0.5,afade=t=out:st={dur - 1.5}:d=1.5")
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-stream_loop", "-1", "-i", str(music), "-af",
-                        chain + ",loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True)
+def mix_music(video, music, dur, out, start, lead, end, looped):
+    chain = music_chain(start, dur, lead, end, looped)
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(music), "-map", "0:a:0", "-af",
+                        chain + ",loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+                       capture_output=True, text=True, timeout=1800)
+    if r.returncode or "{" not in r.stderr:
+        sys.exit(f"music loudness analysis failed:\n{r.stderr[-2000:]}")
     m = json.loads(r.stderr[r.stderr.rindex("{"):r.stderr.rindex("}") + 1])
-    ln = (f"loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
-          f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
-    run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", video, "-stream_loop", "-1", "-i", music,
-         "-filter_complex", f"[1:a]{chain},{ln},aresample=48000[a]", "-map", "0:v", "-map", "[a]", "-map_metadata", "-1", "-c:v", "copy",
-         "-c:a", "aac", "-b:a", "192k", "-t", f"{dur}", "-movflags", "+faststart", out])
+    ln = ""
+    if np.isfinite(float(m["input_i"])) and float(m["input_i"]) > -70:
+        ln = (f",loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
+              f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
+    else:
+        print("  warning: the music is silent in this window - mixed without loudness normalisation")
+    run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", video, "-i", music,
+         "-filter_complex", f"[1:a:0]{chain}{ln},aresample=48000[a]", "-map", "0:v", "-map", "[a]", "-map_metadata", "-1",
+         "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{dur}", "-movflags", "+faststart", out])
     return out
+
+
+def music_start_arg(v):
+    if v.strip().lower() == "auto":
+        return "auto"
+    try:
+        x = float(v)
+    except ValueError:
+        x = float("nan")
+    if not np.isfinite(x) or x < 0:
+        raise argparse.ArgumentTypeError("use 'auto' or a number of seconds >= 0")
+    return x
 
 
 def add_music(video, music, cut_times, dur, start_arg, out):
     if start_arg == "auto":
         start, notes = music_offset(music, cut_times, dur)
     else:
-        start, notes = float(start_arg), dict(offset=float(start_arg), manual=True)
-    mix_music(video, music, dur, out, start)
+        L = track_levels(music)
+        start = float(start_arg)
+        notes = dict(track=round(L["total"], 3), leading_silence=round(L["lead"], 3), sound_end=round(L["end"], 3),
+                     offset=start, manual=True, looped=start + dur > L["total"] + 1e-3)
+    lead, end = notes["leading_silence"], notes["sound_end"]
+    mix_music(video, music, dur, out, start, lead, end, bool(notes.get("looped")))
     notes.update(file=Path(music).name, **loudness(out))
+    notes["loudness_off_target"] = abs(notes["integrated_lufs"] + 14) > 1
+    y = decode_mono(out, 8000)  # longest stretch of near-silence between the fades
+    q = np.r_[False, 10 * np.log10((y[:len(y) // 160 * 160].reshape(-1, 160) ** 2).mean(1) + 1e-12)[30:int((dur - 1.6) * 50)] < -60, False]
+    runs = np.where(np.diff(q.astype(int)) == -1)[0] - np.where(np.diff(q.astype(int)) == 1)[0]
+    notes["longest_silence_s"] = round(float(runs.max() / 50) if len(runs) else 0.0, 2)
     msg = f"  music: {notes['file']} from {start:.3f}s"
-    if notes.get("leading_silence"):
+    if notes.get("leading_silence") and start >= notes["leading_silence"] - 0.06:
         msg += f" (skips {notes['leading_silence']:.2f}s of silence at the head)"
+    if notes.get("looped"):
+        msg += f"; looped (the track's sounding part is {end - lead:.2f}s)"
     if "drop_in_edit" in notes:
         msg += f"; its drop at {notes['drop_in_track']:.2f}s lands at {notes['drop_in_edit']:.3f}s, {notes['drop_to_cut_ms']:+d} ms from the cut at {notes['nearest_cut']:.3f}s"
     print(msg + f"\n  loudness {notes['integrated_lufs']:.1f} LUFS, true peak {notes['true_peak_dbfs']:.1f} dBFS")
+    if notes["loudness_off_target"]:
+        print("  warning: loudness is more than 1 LU away from -14 LUFS (very peaky or silent track)")
+    if notes["longest_silence_s"] > 1.5:
+        print(f"  warning: the music goes silent for {notes['longest_silence_s']:.1f}s inside the edit")
     return notes
 
 
@@ -745,7 +813,8 @@ def verify(paths, target):
         d = float(j["format"]["duration"])
         v = [s for s in j["streams"] if s["codec_type"] == "video"][0]
         a = [s for s in j["streams"] if s["codec_type"] == "audio"]
-        ok &= abs(d - target) < 0.005 if "compare" not in str(p) else True
+        sd = [float(x["duration"]) for x in j["streams"] if x.get("duration") not in (None, "N/A")]
+        ok &= abs(d - target) < 0.005 and all(abs(x - target) < 0.03 for x in sd)
         print(f"  {Path(p).name:24s} duration={d:.3f}s  video={v['codec_name']} {v['width']}x{v['height']} {v['pix_fmt']} "
               f"{v['r_frame_rate']} fps, {v.get('nb_frames')} frames  audio={a[0]['codec_name'] if a else 'none'}")
     return ok
@@ -776,7 +845,7 @@ def main():
     ap.add_argument("--auto", action="store_true", help="ignore the manual plan")
     ap.add_argument("--any-order", action="store_true", help="don't force shots to follow the clips' order")
     ap.add_argument("--grade", type=float, default=GRADE_STRENGTH, help="tone-match strength 0..1")
-    ap.add_argument("--music-start", default="auto", help="seconds into the music track, or 'auto' (skip leading silence, "
+    ap.add_argument("--music-start", default="auto", type=music_start_arg, help="seconds into the music track, or 'auto' (skip leading silence, "
                     "land drops/beats on cuts)")
     ap.add_argument("--music-only", action="store_true", help="only (re)mix music onto output/final_no_music.mp4")
     ap.add_argument("--preview", action="store_true")
@@ -876,9 +945,14 @@ def music_section(notes):
         s += (f". Its drop ({notes['drop_in_track']:.2f}s in the track) lands at {notes['drop_in_edit']:.3f}s in the edit, "
               f"{notes['drop_to_cut_ms']:+d} ms from the cut at {notes['nearest_cut']:.3f}s")
     if notes.get("looped"):
-        s += ". The track is shorter than the edit, so it loops"
-    return s + (f".\nTrimmed to the edit, 0.5 s fade-in, 1.5 s fade-out, two-pass loudnorm: {notes['integrated_lufs']:.1f} LUFS, "
-                f"true peak {notes['true_peak_dbfs']:.1f} dBFS.\n")
+        s += f". The track's sounding part ({notes['sound_end'] - notes['leading_silence']:.2f} s) runs out before the edit ends, so it loops seamlessly"
+    s += (f".\nTrimmed to the edit, 0.5 s fade-in, 1.5 s fade-out, two-pass loudnorm: {notes['integrated_lufs']:.1f} LUFS, "
+          f"true peak {notes['true_peak_dbfs']:.1f} dBFS.\n")
+    if notes.get("loudness_off_target"):
+        s += "Warning: more than 1 LU from the -14 LUFS target (very peaky or silent track).\n"
+    if notes.get("longest_silence_s", 0) > 1.5:
+        s += f"Warning: the music goes silent for {notes['longest_silence_s']:.1f} s inside the edit.\n"
+    return s
 
 
 def music_only(ref, music, args):
