@@ -6,6 +6,7 @@
     python3 -I project/edit.py --auto                # ignore project/shot_plan.json and let the matcher pick footage
     python3 -I project/edit.py --cuts 1.45,3.6,...   # override the detected cut times (reference seconds)
     python3 -I project/edit.py --preview             # fast, low-quality render
+    python3 -I project/edit.py --music-only          # just (re)mix input/music.mp3 onto the rendered edit
 
 Pipeline
   1. reference: ffprobe, cut detection (PySceneDetect content scores + local-peak test), transition type,
@@ -15,7 +16,8 @@ Pipeline
      (dynamic programming over 01 -> 02 -> 03). project/shot_plan.json, when present and made for the same
      clips, overrides the chosen in-points.
   4. render: shot durations scaled to exactly --duration seconds, reference fps/size, H.264 + silent AAC
-  5. music (if input/music.* exists), compare.mp4, summary.md
+  5. music (if input/music.* exists): start point chosen to skip leading silence and land the track's drop/beats
+     on cuts (--music-start to override; --music-only re-mixes without re-rendering), compare.mp4, summary.md
 """
 import argparse, importlib.util, json, shutil, subprocess, sys
 from fractions import Fraction
@@ -595,15 +597,75 @@ def build_edit(ref_an, info, plan, clips, clip_info, music, args, curve):
     (ROOT / "cache" / "render_cmd.txt").write_text(" ".join(f"'{c}'" if " " in str(c) or ";" in str(c) else str(c) for c in cmd))
     print(f"  rendering {out_a.relative_to(ROOT.parent)} ({total} frames @ {FPS} fps) ...", flush=True)
     subprocess.run([str(c) for c in cmd], check=True)
-    outs = [out_a]
-    if music:
-        outs.append(mix_music(out_a, music, args.duration, out_dir / "final_with_music.mp4"))
-    return rows, outs, FPS, edges
+    return rows, [out_a], FPS, edges
 
 
-def mix_music(video, music, dur, out):
-    chain = (f"atrim=0:{dur},asetpts=N/SR/TB,aformat=sample_rates=48000:channel_layouts=stereo,"
-             f"afade=t=in:st=0:d=0.5,afade=t=out:st={dur - 1.5}:d=1.5")
+def decode_mono(path, sr):
+    """Decode with ffmpeg itself, so analysis and mixing share one timeline (mp3 encoder delay etc.)."""
+    raw = run(["ffmpeg", "-v", "error", "-i", path, "-map", "0:a:0", "-af", "asetpts=PTS-STARTPTS", "-ac", "1", "-ar", str(sr),
+               "-f", "f32le", "-"], binary=True)
+    return np.frombuffer(raw, np.float32)
+
+
+def music_offset(music, cut_times, dur):
+    """Where to start the track: skip leading silence, then prefer the offset that puts the track's energy
+    surges (drops) and beats on the edit's cuts. Returns (offset, notes)."""
+    sr, hop, win = 22050, 128, 1024
+    y = decode_mono(music, sr)
+    total, n = len(y) / sr, len(y) // hop
+    t = np.arange(n) * hop / sr
+    db = 10 * np.log10((y[:n * hop].reshape(n, hop) ** 2).mean(1) + 1e-12)
+    loud = np.where(db > db.max() - 40)[0]
+    lead = float(t[loud[0]]) if len(loud) else 0.0
+    if total < lead + dur:  # too short: it gets looped from the first sound
+        return lead, dict(track=round(total, 3), leading_silence=round(lead, 3), looped=True)
+    frames = np.lib.stride_tricks.sliding_window_view(np.pad(y, (win // 2, win // 2)), win)[::hop][:n] * np.hanning(win).astype(np.float32)
+    mag = np.log1p(10 * np.abs(np.fft.rfft(frames, axis=1)))
+    onset = np.r_[0, np.maximum(np.diff(mag, axis=0), 0).sum(1)]
+    onset /= np.percentile(onset, 99) + 1e-9
+    # energy surge = mean level of the next 0.75 s minus the previous 0.75 s; levels floored 40 dB under the peak, and
+    # the music's own entrance out of leading silence doesn't count
+    W = int(0.75 * sr / hop)
+    c = np.r_[0, np.cumsum(np.maximum(db, db.max() - 40))]
+    i = np.arange(n)
+    nxt = (c[np.minimum(i + W, n)] - c[i]) / np.maximum(np.minimum(i + W, n) - i, 1)
+    prv = (c[i] - c[np.maximum(i - W, 0)]) / np.maximum(i - np.maximum(i - W, 0), 1)
+    rise = np.where(t - W * hop / sr >= lead + 0.05, np.maximum(nxt - prv, 0), 0)
+    drops = []  # surges of >= 3 dB, at least 1 s apart, strongest first
+    for k in np.argsort(-rise):
+        if rise[k] < 3 or len(drops) == 4:
+            break
+        if all(abs(t[k] - t[d]) > 1.0 for d in drops):
+            drops.append(int(k))
+    near = lambda a, x: a[np.clip(np.round(x * sr / hop).astype(int)[:, None] + np.arange(-2, 3), 0, n - 1)].max(1)
+    cuts = np.asarray(cut_times, float)
+    offs = np.arange(max(0.0, lead - 0.05), total - dur + 1e-9, hop / sr)
+    score = np.array([near(onset, cuts + o).mean() for o in offs])          # beats on cuts (tie-breaker)
+    for k in drops:                                                          # drops on cuts, within ~1 frame
+        hit = np.exp(-(((cuts[None, :] + offs[:, None]) - t[k]) / 0.02) ** 2).sum(1)
+        score += 3 * rise[k] / rise[drops[0]] * hit
+    o = float(offs[int(np.argmax(score))])
+    notes = dict(track=round(total, 3), leading_silence=round(lead, 3), offset=round(o, 3), looped=False)
+    drop = drops[0] if drops else None
+    land = t[drop] - o if drops else -1
+    if drops and 0 <= land <= dur:
+        k = int(np.argmin(np.abs(cuts - land)))
+        notes.update(drop_in_track=round(float(t[drop]), 3), drop_in_edit=round(float(land), 3),
+                     nearest_cut=round(float(cuts[k]), 3), drop_to_cut_ms=round(float(land - cuts[k]) * 1000))
+    return o, notes
+
+
+def loudness(path):
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-map", "0:a:0", "-af", "ebur128=peak=true",
+                        "-f", "null", "-"], capture_output=True, text=True)
+    s = r.stderr[r.stderr.rindex("Summary:"):]
+    num = lambda key: float(s.split(key)[1].split()[0])
+    return dict(integrated_lufs=num("I:"), true_peak_dbfs=num("Peak:"))
+
+
+def mix_music(video, music, dur, out, start=0.0):
+    chain = (f"asetpts=PTS-STARTPTS,atrim=start={start:.4f}:end={start + dur:.4f},asetpts=PTS-STARTPTS,"
+             f"aformat=sample_rates=48000:channel_layouts=stereo,afade=t=in:st=0:d=0.5,afade=t=out:st={dur - 1.5}:d=1.5")
     r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-stream_loop", "-1", "-i", str(music), "-af",
                         chain + ",loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"], capture_output=True, text=True)
     m = json.loads(r.stderr[r.stderr.rindex("{"):r.stderr.rindex("}") + 1])
@@ -615,7 +677,24 @@ def mix_music(video, music, dur, out):
     return out
 
 
-def compare_video(ref, info, edit, shots, FPS, edges, out):
+def add_music(video, music, cut_times, dur, start_arg, out):
+    if start_arg == "auto":
+        start, notes = music_offset(music, cut_times, dur)
+    else:
+        start, notes = float(start_arg), dict(offset=float(start_arg), manual=True)
+    mix_music(video, music, dur, out, start)
+    notes.update(file=Path(music).name, **loudness(out))
+    msg = f"  music: {notes['file']} from {start:.3f}s"
+    if notes.get("leading_silence"):
+        msg += f" (skips {notes['leading_silence']:.2f}s of silence at the head)"
+    if "drop_in_edit" in notes:
+        msg += f"; its drop at {notes['drop_in_track']:.2f}s lands at {notes['drop_in_edit']:.3f}s, {notes['drop_to_cut_ms']:+d} ms from the cut at {notes['nearest_cut']:.3f}s"
+    print(msg + f"\n  loudness {notes['integrated_lufs']:.1f} LUFS, true peak {notes['true_peak_dbfs']:.1f} dBFS")
+    return notes
+
+
+def compare_video(ref, info, edit, shots, FPS, edges, out, audio=None):
+    """Reference (time-stretched) | edit, with a shot bar. Audio: the edit's music mix if any, never the reference's."""
     k = (edges[-1] / FPS) / info["duration"]
     f = LABEL_FONT
     bars = []
@@ -629,9 +708,10 @@ def compare_video(ref, info, edit, shots, FPS, edges, out):
           f"[1:v]scale=540:960,setsar=1,{lab('MY EDIT')}[b];"
           f"[a][b]hstack=inputs=2,{','.join(bars)},"
           f"drawtext=fontfile={f}:text='%{{pts\\:hms}}':x=w-tw-12:y=h-32:fontsize=24:fontcolor=white,format=yuv420p[v]")
-    run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", ref, "-i", edit, "-f", "lavfi", "-t", f"{edges[-1] / FPS}",
-         "-i", "anullsrc=r=48000:cl=stereo", "-filter_complex", fc, "-map", "[v]", "-map", "2:a", "-map_metadata", "-1",
-         "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-frames:v", str(edges[-1]), "-c:a", "aac", "-b:a", "64k",
+    a_in = ["-i", audio] if audio else ["-f", "lavfi", "-t", f"{edges[-1] / FPS}", "-i", "anullsrc=r=48000:cl=stereo"]
+    run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", ref, "-i", edit, *a_in,
+         "-filter_complex", fc, "-map", "[v]", "-map", "2:a:0", "-map_metadata", "-1",
+         "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-frames:v", str(edges[-1]), "-c:a", "aac", "-b:a", "128k",
          "-t", f"{edges[-1] / FPS}", "-movflags", "+faststart", out])
 
 
@@ -696,6 +776,9 @@ def main():
     ap.add_argument("--auto", action="store_true", help="ignore the manual plan")
     ap.add_argument("--any-order", action="store_true", help="don't force shots to follow the clips' order")
     ap.add_argument("--grade", type=float, default=GRADE_STRENGTH, help="tone-match strength 0..1")
+    ap.add_argument("--music-start", default="auto", help="seconds into the music track, or 'auto' (skip leading silence, "
+                    "land drops/beats on cuts)")
+    ap.add_argument("--music-only", action="store_true", help="only (re)mix music onto output/final_no_music.mp4")
     ap.add_argument("--preview", action="store_true")
     args = ap.parse_args()
 
@@ -705,6 +788,8 @@ def main():
         download(args.drive, inp)
     ref, clips, music = find_inputs(inp, args)
     (ROOT / "analysis").mkdir(exist_ok=True)
+    if args.music_only:
+        return music_only(ref, music, args)
 
     print("== Reference")
     info = probe(ref)
@@ -756,9 +841,14 @@ def main():
 
     print("== Rendering")
     rows, outs, FPS, edges = build_edit(an, info, plan, clips, clip_info, music, args, curve)
+    music_notes = None
+    if music:
+        print("== Music")
+        outs.append(ROOT / "output" / "final_with_music.mp4")
+        music_notes = add_music(outs[0], music, [e / FPS for e in edges[1:-1]], args.duration, args.music_start, outs[1])
     print("== Compare + checks")
     cmp_path = ROOT / "output" / "compare.mp4"
-    compare_video(ref, info, outs[0], an["shots"], FPS, edges, cmp_path)
+    compare_video(ref, info, outs[0], an["shots"], FPS, edges, cmp_path, audio=outs[1] if music else None)
     match_sheet(ref, outs[0], an["shots"], info, FPS, edges, ROOT / "analysis" / "match_sheet.jpg")
     ok = verify(outs + [cmp_path], args.duration)
 
@@ -769,10 +859,46 @@ def main():
     summary = "\n".join(lines)
     (ROOT / "output" / "summary.md").write_text(
         f"# Edit summary\n\nReference: {ref.name} ({info['duration']:.2f}s, scaled x{args.duration / info['duration']:.4f} to {args.duration:g}s)\n"
-        f"Plan: {'manual in-points from ' + pf.name if manual_used else 'automatic matching'}\n\n{summary}\n")
+        f"Plan: {'manual in-points from ' + pf.name if manual_used else 'automatic matching'}\n\n{summary}\n" + music_section(music_notes))
     print("\n" + summary)
     if not music:
         print(f"\nNo music.mp3/.m4a/.wav in {inp} - skipped final_with_music.mp4")
+    print("\nDuration check:", "OK" if ok else "FAILED")
+
+
+def music_section(notes):
+    if not notes:
+        return ""
+    s = f"\n## Music\n\n{notes['file']}, from {notes['offset']:.3f}s into the track"
+    if notes.get("leading_silence"):
+        s += f" (the track opens with {notes['leading_silence']:.2f}s of silence)"
+    if "drop_in_edit" in notes:
+        s += (f". Its drop ({notes['drop_in_track']:.2f}s in the track) lands at {notes['drop_in_edit']:.3f}s in the edit, "
+              f"{notes['drop_to_cut_ms']:+d} ms from the cut at {notes['nearest_cut']:.3f}s")
+    if notes.get("looped"):
+        s += ". The track is shorter than the edit, so it loops"
+    return s + (f".\nTrimmed to the edit, 0.5 s fade-in, 1.5 s fade-out, two-pass loudnorm: {notes['integrated_lufs']:.1f} LUFS, "
+                f"true peak {notes['true_peak_dbfs']:.1f} dBFS.\n")
+
+
+def music_only(ref, music, args):
+    """Re-mix music onto the rendered edit without re-rendering (uses cuts.json for the cut times)."""
+    video, out = ROOT / "output" / "final_no_music.mp4", ROOT / "output" / "final_with_music.mp4"
+    if not music or not video.exists() or not (ROOT / "cuts.json").exists():
+        sys.exit("--music-only needs input/music.(mp3|m4a|wav), output/final_no_music.mp4 and cuts.json - run once without it first")
+    cj = json.loads((ROOT / "cuts.json").read_text())
+    dur, FPS = cj["target_duration"], probe(video)["fps"]
+    FPS = int(FPS) if float(FPS).is_integer() else FPS
+    edges = [0] + [int(round(x["out_start"] * FPS)) for x in cj["shots"][1:]] + [int(round(dur * FPS))]
+    print("== Music")
+    notes = add_music(video, music, [e / FPS for e in edges[1:-1]], dur, args.music_start, out)
+    print("== Compare + checks")
+    cmp_path = ROOT / "output" / "compare.mp4"
+    compare_video(ref, probe(ref), video, cj["shots"], FPS, edges, cmp_path, audio=out)
+    ok = verify([video, out, cmp_path], dur)
+    sm = ROOT / "output" / "summary.md"
+    if sm.exists():
+        sm.write_text(sm.read_text().split("\n## Music")[0].rstrip("\n") + "\n" + music_section(notes))
     print("\nDuration check:", "OK" if ok else "FAILED")
 
 
