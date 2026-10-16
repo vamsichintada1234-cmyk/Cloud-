@@ -5,3 +5,4 @@ output/
 *.MP4
 project/input/
 project/cache/
+__pycache__/
