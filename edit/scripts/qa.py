@@ -17,7 +17,7 @@ def frames(idx, out, scale=270, cols=None):
 cuts = [round(s["start"]*FPS) for s in SEGMENTS[1:]]
 frames([0, 1] + sum([[c-1, c] for c in cuts], []) + [round(END*FPS)-1], "cuts.jpg")
 # contact sheet, every 6 frames (0.1 s)
-n = res["video"]["frames"]; frames(list(range(0, n, 9)), "contact.jpg", 180, 10)
+n = res["video"]["frames"]; frames(list(range(0, n, 24)), "contact.jpg", 180, 10)
 # head-layer presence and alignment in the split segment: rows above the card edge must differ from the pure graphic
 s1n = round(SEGMENTS[0]["end"]*FPS)
 def grab(src, i, filt=""):

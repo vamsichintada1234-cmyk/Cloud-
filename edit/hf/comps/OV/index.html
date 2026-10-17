@@ -39,8 +39,8 @@
 </style>
 </head>
 <body>
-<div id="root" data-composition-id="OV" data-start="0" data-duration="5.85" data-width="1080" data-height="1920">
-  <div id="layer" class="clip" data-start="0" data-duration="5.85" data-track-index="0" style="position:absolute;inset:0">
+<div id="root" data-composition-id="OV" data-start="0" data-duration="20.00" data-width="1080" data-height="1920">
+  <div id="layer" class="clip" data-start="0" data-duration="20.00" data-track-index="0" style="position:absolute;inset:0">
     <div class="el" id="cover"><div>Is Fabro's MOQ</div><div>really high?</div></div>
     <div class="cap" id="cap0" style="top:1027px"><div class="stroke"><span class="nm">Chaala</span> <span class="nm">mandi</span></div><div class="fill"><span class="nm">Chaala</span> <span class="nm">mandi</span></div></div>
     <div class="cap" id="cap1" style="top:1027px"><div class="stroke"><span class="nm">Fabro</span> <span class="nm">lo</span></div><div class="fill"><span class="nm">Fabro</span> <span class="nm">lo</span></div></div>
@@ -48,8 +48,8 @@
     <div class="cap" id="cap3" style="top:1027px"><div class="stroke"><span class="nm">untadi</span> <span class="nm">anukunnaru</span></div><div class="fill"><span class="nm">untadi</span> <span class="nm">anukunnaru</span></div></div>
     <div class="cap" id="cap4" style="top:1400px"><div class="stroke"><span class="nm">vaalla</span> <span class="nm">kosame</span></div><div class="fill"><span class="nm">vaalla</span> <span class="nm">kosame</span></div></div>
     <div class="cap" id="cap5" style="top:1400px"><div class="stroke"><span class="nm">ee</span> <span class="nm">video</span></div><div class="fill"><span class="nm">ee</span> <span class="nm">video</span></div></div>
-    <div class="cap" id="cap6" style="top:1730px"><div class="stroke"><span class="hl">chivari</span> <span class="hl">varaku</span></div><div class="fill"><span class="hl">chivari</span> <span class="hl">varaku</span></div></div>
-    <div class="cap" id="cap7" style="top:1730px"><div class="stroke"><span class="nm">choodandi</span></div><div class="fill"><span class="nm">choodandi</span></div></div>
+    <div class="cap" id="cap6" style="top:1400px"><div class="stroke"><span class="hl">chivari</span> <span class="hl">varaku</span></div><div class="fill"><span class="hl">chivari</span> <span class="hl">varaku</span></div></div>
+    <div class="cap" id="cap7" style="top:1400px"><div class="stroke"><span class="nm">choodandi</span></div><div class="fill"><span class="nm">choodandi</span></div></div>
     <div class="el" id="cta">
       <div id="box">
         <div class="av"><svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="46" r="21" fill="#B9B6AE"/><path d="M20 112c4-26 20-38 40-38s36 12 40 38z" fill="#B9B6AE"/></svg></div>
@@ -62,9 +62,9 @@
 </div>
 <script>
   const { bake, E, track } = HF;
-  const D = 5.85, tl = gsap.timeline({ paused: true });
+  const D = 20.00, tl = gsap.timeline({ paused: true });
   const BLOCKS = [[0.0167, 0.68], [0.68, 1.38], [1.38, 2.16], [2.16, 3.15], [3.15, 3.76], [3.76, 4.45], [4.45, 4.92], [4.92, 5.85]];
-  const C0 = 4.45, WORD = "MOQ", KEYS = [0.10, 0.20, 0.30];     // CTA: typing, caret blink, click on Post
+  const C0 = 15.90, WORD = "MOQ", KEYS = [0.10, 0.20, 0.30];     // CTA: typing, caret blink, click on Post
   const CLICK = C0 + 0.86;
   const ptr = track([[C0 + 0.40, [560, 250]], [C0 + 0.80, [880, 140], "power2.inOut"]]);
   const typed = {};

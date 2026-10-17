@@ -11,9 +11,9 @@ BLOCKS = [
     (3.15, 3.76, [("vaalla",0),("kosame",0)], "S2"),
     (3.76, 4.45, [("ee",0),("video",0)], "S2"),
     (4.45, 4.92, [("chivari",1),("varaku",1)], "S3"),
-    (4.92, END,  [("choodandi",0)], "S3"),
+    (4.92, 5.85, [("choodandi",0)], "S3"),
 ]
-CY = {"S1": 1027, "S2": 1400, "S3": 1730}   # split gap 941-1114 / bottom 1267-1536 / ending moved below CTA card: 1037-1306 band covers the mouth in the lean-in
+CY = {"S1": 1027, "S2": 1400, "S3": 1400}   # split gap 941-1114 / bottom 1267-1536 (S3: chin ends ~1150, CTA card now lives in S6)
 html = []
 for i, (a, b, ws, seg) in enumerate(BLOCKS):
     spans = " ".join(f'<span class="{"hl" if h else "nm"}">{w}</span>' for w, h in ws)

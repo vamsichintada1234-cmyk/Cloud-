@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1080, height=1920" />
+<script src="gsap.min.js"></script>
+<script src="engine.js"></script>
+<link rel="stylesheet" href="common.css" />
+<style>
+  /* order form document: 840 x 1015, bottom edge y = 1215 (visual safe area 1200-1230) */
+  #form { left: 120px; top: 200px; width: 840px; height: 1015px; padding: 56px 56px 0; }
+  .row { display: flex; align-items: center; justify-content: space-between; }
+  .pill { font-size: 30px; font-weight: 700; color: var(--terra-text); background: var(--band); padding: 8px 26px; border-radius: 40px; }
+  .lbl { font-size: 30px; color: #6E6B66; margin: 34px 0 12px; }
+  #style { height: 92px; border-radius: 26px; background: #F6F5F2; display: flex; align-items: center; padding: 0 30px; font-size: 44px; font-weight: 700; }
+  #caret { width: 4px; height: 50px; background: var(--terra); margin-left: 4px; border-radius: 2px; }
+  .chips { display: flex; gap: 18px; }
+  .chip { width: 150px; height: 84px; border-radius: 42px; border: 3px solid #E4E1DC; display: grid; place-items: center; font-size: 36px; font-weight: 700; color: #111; position: relative; }
+  .chip .on { position: absolute; inset: -3px; border-radius: 42px; background: var(--terra); color: #fff; display: grid; place-items: center; opacity: 0; }
+  #bands { position: relative; height: 300px; border-radius: 40px; background: var(--band); overflow: hidden; }
+  .bar { position: absolute; bottom: 0; width: 104px; height: 250px; border-radius: 22px 22px 0 0; background: var(--terra); transform-origin: 50% 100%; }
+  #minline { position: absolute; left: 24px; right: 24px; top: 150px; border-top: 5px dashed var(--terra-text); }
+  #mintag { position: absolute; right: 30px; top: 14px; font-size: 30px; font-weight: 700; color: var(--terra-text); }
+  .barlbl { position: absolute; bottom: 14px; width: 104px; text-align: center; font-size: 30px; font-weight: 700; color: #fff; }
+  #go { position: relative; margin-top: 36px; height: 104px; border-radius: 52px; background: #111; color: #fff; display: grid; place-items: center; font-size: 36px; font-weight: 700; overflow: hidden; }
+  #go .ok { position: absolute; inset: 0; background: var(--green); display: flex; align-items: center; justify-content: center; gap: 16px; opacity: 0; }
+  #cursor { left: 0; top: 0; width: 64px; height: 64px; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="S4" data-start="0" data-duration="6.00" data-width="1080" data-height="1920">
+  <div id="scene" class="clip" data-start="0" data-duration="6.00" data-track-index="0" style="position:absolute;inset:0">
+    <div class="bg"></div>
+    <div class="world" id="world">
+      <div class="el elev r-doc" id="form">
+        <div class="row" id="hdr"><div class="t-sub">New order</div><div class="pill">Fabro</div></div>
+        <div id="f1"><div class="lbl">Style</div><div id="style"><span id="typed"></span><div id="caret"></div></div></div>
+        <div id="f2"><div class="lbl">Sizes</div>
+          <div class="chips"><div class="chip" id="cS">S<div class="on">S</div></div><div class="chip" id="cM">M<div class="on">M</div></div><div class="chip" id="cL">L<div class="on">L</div></div><div class="chip" id="cXL">XL<div class="on">XL</div></div></div></div>
+        <div class="lbl">Pieces per size</div>
+        <div id="bands">
+          <div id="minline"></div><div id="mintag">Minimum</div>
+          <div class="bar" id="b0" style="left:56px"></div><div class="bar" id="b1" style="left:232px"></div>
+          <div class="bar" id="b2" style="left:408px"></div><div class="bar" id="b3" style="left:584px"></div>
+          <div class="barlbl" style="left:56px">S</div><div class="barlbl" style="left:232px">M</div><div class="barlbl" style="left:408px">L</div><div class="barlbl" style="left:584px">XL</div>
+        </div>
+        <div id="go">Place order<div class="ok"><svg width="48" height="48" viewBox="0 0 58 58"><path d="M12 30 L24 42 L47 17" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>Ready to produce</div></div>
+      </div>
+      <svg class="el" id="cursor" viewBox="0 0 64 64"><path d="M10 4 L10 52 L22 41 L31 60 L40 56 L31 37 L47 37 Z" fill="#fff" stroke="#111" stroke-width="4" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</div>
+<script>
+  const { track, aim, camSpeed, sigmaFor, bake, blurCss, E } = HF;
+  const D = 6.0, tl = gsap.timeline({ paused: true });
+  gsap.set("#world", { transformOrigin: "0 0" });
+  gsap.set("#form", { transformOrigin: "50% 0%" });
+  window.S4T = { type: [0.30, 0.08, "Basic tee"], chips: [1.45, 1.65, 1.85, 2.05], bars: [3.30, 0.22], ok: 5.05 };
+  const T = window.S4T;
+  // window demo: form 1.0 -> 1.15 (0.55 s, power2.inOut) while typing / picking sizes; camera still
+  const win = track([[0.15, 1], [0.70, 1.15, "power2.inOut"], [2.30, 1.15], [2.85, 1, "power2.inOut"]]);
+  // camera: rest -> push-in 1.6x on the quantity bars (1.6 s power2.inOut) -> pull-back (1.2 s power2.inOut) -> rest
+  const BX = 540, BY = 200 + 56 + 0 + 735;      // world centre of the bars band (approx.)
+  const cam = track([[3.00, aim(540, 960, 540, 960, 1)], [4.60, aim(548, 944, 540, 900, 1.6), "power2.inOut"],
+                     [4.80, aim(548, 944, 540, 900, 1.6)], [6.00 - 0.0, aim(540, 960, 540, 960, 1), "power2.inOut"]]);
+  const pushP = track([[3.0, 0], [4.6, 1, "power2.inOut"], [4.8, 1], [6.0, 0, "power2.inOut"]]);
+  // cursor path in world coords (tip)
+  const chipX = [ [271, 0], [439, 0], [607, 0], [775, 0] ];
+  const cur = track([[0.9, [880, 1300]], [1.40, [255, 640], "power2.inOut"], [1.60, [423, 640], "power2.inOut"],
+                     [1.80, [591, 640], "power2.inOut"], [2.00, [775, 640], "power2.inOut"], [2.40, [900, 1300], "power2.inOut"]]);
+  bake(tl, D, t => {
+    const c = cam(t), sig = sigmaFor(camSpeed(cam, t, 540, 900));
+    const st = { "#world": { x: c[0], y: c[1], scale: c[2], filter: blurCss(sig) }, "#form": { scale: win(t) } };
+    const n = Math.max(0, Math.min(9, Math.floor((t - T.type[0]) / T.type[1]) + 1));
+    st["#typed"] = { textContent: t < T.type[0] ? "" : T.type[2].slice(0, n) };
+    st["#caret"] = { opacity: t < 1.2 ? (Math.floor(t / 0.25) % 2 ? 0.2 : 1) : 0 };
+    ["cS", "cM", "cL", "cXL"].forEach((id, i) => {
+      const tc = T.chips[i]; st[`#${id} .on`] = { opacity: t >= tc ? 1 : 0 }; st["#" + id] = { scale: t >= tc && t < tc + 0.08 ? 0.92 : 1 };
+    });
+    const p = cur(t), press = T.chips.some(tc => t >= tc && t < tc + 0.08);
+    st["#cursor"] = { x: (p[0] - 540) * win(t) + 540 - 10, y: (p[1] - 200) * win(t) + 200 - 4, scale: press ? 0.86 : 1, opacity: t > 0.9 && t < 2.5 ? 1 : 0 };
+    for (let i = 0; i < 4; i++) {
+      const a = T.bars[0] + i * T.bars[1], q = Math.max(0, Math.min(1, (t - a) / 0.5));
+      st["#b" + i] = { scaleY: 0.12 + 0.88 * E["power3.out"](q) * [0.74, 0.8, 0.77, 0.72][i] };
+    }
+    // depth of field after the push-in: secondary fields <= 9 px blur, ~40 % opacity; the bars + "Minimum" stay sharp
+    const dp = pushP(t);
+    for (const id of ["#hdr", "#f1", "#f2", "#go"]) st[id] = { filter: blurCss(9 * dp), opacity: 1 - 0.6 * dp };
+    st["#go .ok"] = { opacity: t >= T.ok ? Math.min(1, (t - T.ok) / 0.12) : 0 };
+    return st;
+  });
+  window.__timelines = window.__timelines || {};
+  window.__timelines["S4"] = tl;
+  tl.seek(0);
+</script>
+</body>
+</html>

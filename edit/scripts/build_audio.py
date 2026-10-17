@@ -39,6 +39,35 @@ for k, tb in enumerate(box_land):                      # light streaming sequenc
 EVENTS.append(("stream ticks (6) - cartons stack on the MOQ card", box_land[0], box_land[-1], VPEAK - 16))
 place(sfx, at_peak(thump(), VPEAK - 10), 2.76); EVENTS.append(("thump - 'HIGH?' stamp lands", 2.76, 2.76, VPEAK - 10))
 place(sfx, at_peak(click(), VPEAK - 10), 3.15 + 0.62); EVENTS.append(("soft click - tap on play button", 3.77, 3.77, VPEAK - 10))
+def key(k):
+    n = int(0.05*SR); t = np.arange(n)/SR
+    return lp(bp(rng.standard_normal(n), 1800 + 90*k, 6000)*env_ad(n, 0.0003, 0.006) + 0.5*np.sin(2*np.pi*(950+40*k)*t)*env_ad(n, 0.0005, 0.01), 9000)
+def chime():
+    n = int(0.9*SR); t = np.arange(n)/SR; x = np.zeros(n)
+    for f, d in ((1318.5, 0.0), (1975.5, 0.11)):
+        i = int(d*SR); tt = t[:n-i]
+        x[i:] += (np.sin(2*np.pi*f*tt) + 0.25*np.sin(2*np.pi*2*f*tt)) * env_ad(n-i, 0.003, 0.28)
+    return lp(x, 7000)
+def whoosh(var):
+    n = int(1.05*SR); t = np.arange(n)/SR; c = 0.525; nz = rng.standard_normal(n); x = np.zeros(n)
+    for a in range(0, n, 1200):
+        b = min(n, a+1200); u = (a/n); fc = [500, 650, 420, 560][var]*(1 + 3.2*np.exp(-((u-0.5)/0.18)**2))
+        x[a:b] = bp(nz[max(0, a-2400):b], fc*0.5, min(fc*1.6, 20000))[-(b-a):]
+    e = np.exp(-((t-c)/0.17)**2); return x*e      # envelope peak exactly at the centre of the move
+S4, S5, S6 = 6.80, 12.80, 14.30
+for i in range(9): place(sfx, pan(at_peak(key(i), VPEAK - 16), -0.1 + 0.025*i), S4 + 0.30 + i*0.08)
+EVENTS.append(("key sequence (9) - 'Basic tee' typed in the Style field", S4 + 0.30, S4 + 0.30 + 8*0.08, VPEAK - 16))
+for i, tc in enumerate((1.45, 1.65, 1.85, 2.05)):
+    place(sfx, pan(at_peak(click(), VPEAK - 10), -0.2 + 0.13*i), S4 + tc)
+    EVENTS.append((f"soft click - size chip {['S','M','L','XL'][i]} pressed", S4 + tc, S4 + tc, VPEAK - 10))
+bt = [S4 + 3.30 + i*0.22 + 0.12 for i in range(4)]
+for k, tb in enumerate(bt): place(sfx, pan(at_peak(tick(2100 + 200*k), VPEAK - 16), -0.15 + 0.1*k), tb)
+EVENTS.append(("stream ticks (4) - quantity bars rise past the minimum line", bt[0], bt[-1], VPEAK - 16))
+place(sfx, at_peak(chime(), VPEAK - 10), S4 + 5.05); EVENTS.append(("two-note chime - 'Ready to produce' confirmation", S4 + 5.05, S4 + 5.05, VPEAK - 10))
+place(sfx, at_peak(thump(), VPEAK - 10), S5 + 0.62); EVENTS.append(("thump - 'MOQ ?' block lands", S5 + 0.62, S5 + 0.62, VPEAK - 10))
+WMID = S6 + 0.825   # whip: 0.30-0.75 exit (power3.in) + 0.75-1.35 arrival (power3.out); temporal middle = 0.825
+w = at_peak(whoosh(0), VPEAK - 9); place(sfx, pan(w, 0), WMID - 0.525)
+EVENTS.append(("whoosh (variation 1 of 4) - whip to the Fabro wordmark, peak at move middle", WMID, WMID, VPEAK - 9))
 
 # ---------- RISER (audible end exactly at the hook join 3.15 s) ----------
 J1 = 3.15; RL = 2.6; n = int(round(RL*SR)); t = np.arange(n)/SR; p = t/RL
@@ -85,6 +114,12 @@ for b in range(nbeats):
     if b % 4 == 0:
         c = (b//4) % 4; place(mus, pad(chords[c], beat*4)*0.07, tb)
     place(mus, bass(roots[((b//4) % 4)], beat*0.9)*0.35, tb)
+    if tb >= 5.85 - 1e-6 and tb < END - 1.0:          # instrumental section: soft plucked arpeggio (no voice to compete with)
+        c = chords[(b//4) % 4]
+        for j in range(2):
+            f = c[(2*b + j) % 4] * 2; n2 = int(0.3*SR); t2 = np.arange(n2)/SR
+            pl = lp((np.sin(2*np.pi*f*t2) + 0.3*np.sin(2*np.pi*2*f*t2)) * env_ad(n2, 0.002, 0.09), 2500)
+            place(mus, pan(pl*0.05, -0.35 if j == 0 else 0.35), tb + j*beat/2)
 # no fade-in beyond a 5 ms ramp; 800 ms fade-out; one static gain (no automation)
 ramp = int(0.005*SR); mus[:ramp] *= np.linspace(0, 1, ramp)[:, None]
 fo = int(0.8*SR); mus[-fo:] *= np.linspace(1, 0, fo)[:, None]

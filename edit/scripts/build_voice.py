@@ -3,7 +3,7 @@ import numpy as np, soundfile as sf, pyloudnorm as pyln
 from edl import PIECES, END
 x, sr = sf.read("edit/work/clean_voice.wav")           # 48 kHz stereo (dual mono)
 x = x.mean(1)
-N = int(round(END * sr)); out = np.zeros(N)
+N = int(round(END * sr)); out = np.zeros(N)   # voice ends at VOICE_END, silence after
 for p in PIECES:
     a = int(round(p["src_in"] * sr)); f0 = int(round(p["src_full_end"] * sr)); fl = int(round(p["fade"] * sr))
     seg = x[a:f0 + fl].copy()

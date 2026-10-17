@@ -1,4 +1,15 @@
-# Edit report: "Is Fabro's MOQ really high?" (9:16 Reel / Short / TikTok)
+# Edit report: "Is Fabro's MOQ really high?" (9:16 Reel / Short / TikTok), 20-second version
+
+> **v2 (20 s).** You asked for a 20-second video. The recording holds only one complete take: 5.4 s of speech, edited to 5.85 s. I kept that voice edit unchanged and added 14.15 s of music-led material after the CTA:
+> * a 0.95 s held look into the lens;
+> * an order-form demo of how MOQ works (S4);
+> * a split shot of you standing at the lens, from the silent opening of the clip (S5);
+> * a whip move to the Fabro wordmark with the comment-box CTA (S6).
+>
+> Deviations from the original brief that follow from this, all forced by the length request:
+> * END is now 20.000 s, while the voice ends at 5.85 s.
+> * The ending (S6) is a visual composition, not full-screen camera: no further eye-contact footage exists.
+> * The master is −16.0 LUFS, not −14 (see §8).
 
 Source: `raw/DJI_20260807144306_0622_D.MP4`, downloaded from the shared Google Drive link. It is a DJI clip: 1728×3072 vertical HEVC 10-bit, 25 fps, 16.24 s, with one stereo AAC 48 kHz track.
 
@@ -12,20 +23,23 @@ Everything is reproducible from `edit/scripts/` (Python) and `edit/hf/comps/` (H
 
 ## 1. END
 
-**END = 5850 ms** (5.850 s = frame 351 at 60 fps, exclusive). The voice track and all stems end at exactly this point, and so do every video layer and the AAC stream.
+**END = 20 000 ms** (20.000 s = frame 1200 at 60 fps, exclusive). All stems, every video layer and the AAC stream end at exactly this point. The speech (voice track content) ends at 5 850 ms, followed by digital silence in `voice.wav` so every stem spans the full length.
 
 ## 2. Segment table (written before building the graphics; from `scripts/edl.py`)
 
 | # | Start (ms) | End (ms) | Frames | Layout | Source range (camera) | Content |
 |---|---|---|---|---|---|---|
-| S1 | 0 | 3150 | 0–188 | **B. Split** | 7.78–10.93 s | Hook: "Chaala mandi Fabro lo MOQ ekkuva untadi anukunnaru" ("Many people think Fabro's MOQ is high"). Graphic: Fabro wordmark card, then a camera move to an MOQ order card where cartons stack up, then a "HIGH?" stamp. Camera card + cut-out head at the bottom. |
-| S2 | 3150 | 4450 | 189–266 | **C. Fully visual** | (camera hidden) | "Vaalla kosame ee video" ("This video is for them"). A phone plays "this video": the cursor taps play, the window scales up 1.15×, and the progress bar starts. |
-| S3 | 4450 | 5850 | 267–350 | **A. Full-screen camera** | 12.51–13.91 s | CTA: "Chivari varaku choodandi" ("Watch till the end"). You lean into the lens, with the comment-box CTA card. |
+| S1 | 0 | 3150 | 0–188 | **B. Split** | 7.78–10.93 s | Hook: "Chaala mandi Fabro lo MOQ ekkuva untadi anukunnaru". Fabro wordmark, then the MOQ order card with cartons stacking and a "HIGH?" stamp. |
+| S2 | 3150 | 4450 | 189–266 | **C. Visual** | – | "Vaalla kosame ee video": phone, tap on play, window scales 1.15×. |
+| S3 | 4450 | 6800 | 267–407 | **A. Full camera** | 12.51–14.86 s | CTA "Chivari varaku choodandi" (lean-in), then a 0.95 s silent held look at the lens. |
+| S4 | 6800 | 12800 | 408–767 | **C. Visual** | – | How MOQ works (music): order form. "Basic tee" is typed, the S/M/L/XL chips are clicked (window 1.0 → 1.15×, camera still), a 1.6× push-in follows the per-size bars rising past the "Minimum" line, then a pull-back to "Ready to produce" ✓. No figures. |
+| S5 | 12800 | 14300 | 768–857 | **B. Split** | 0.70–2.20 s (silent, at the lens) | Fabro wordmark block; a "MOQ ?" block lands. Camera card + cut-out head (clip placed at y = 470). |
+| S6 | 14300 | 20000 | 858–1199 | **C. Visual** | – | Whip (0.45 s power3.in + 0.6 s power3.out) to a large Fabro wordmark (bottom edge y 1215), gentle drift; comment-box CTA types "MOQ" and clicks Post (green ✓). |
 
 Checks:
 * All three layouts are used, and no two consecutive segments share one.
-* Every segment is ≤ 8 s (the longest is 3.15 s).
-* The hook is split. The ending (CTA) is full-screen camera.
+* Every segment is ≤ 8 s (the longest is S4, 6.0 s).
+* The hook is split. The spoken CTA (S3) is full-screen camera. The final segment is visual (see the v2 note).
 * All picture cuts are hard cuts on the 60 fps grid.
 
 ## 3. Takes, selection and substitutions
@@ -111,8 +125,14 @@ None measurable: the speech states no figure. Two things are unverified:
 | 2.02, 2.14, 2.26, 2.38, 2.50, 2.62 | light tick sequence (one streaming event) | cartons land on the MOQ card | −16 dB (≈ −17.6 dBFS; panning adds ≤ 0.6 dB on one side) |
 | 2.76 | muffled thump | "HIGH?" stamp lands | −10 dB (−11.5 dBFS) |
 | 3.77 | soft click | tap on the play button | −10 dB (−11.5 dBFS) |
+| 7.10–7.74 | key sequence (9 keys) | "Basic tee" typed | −16 dB |
+| 8.25, 8.45, 8.65, 8.85 | soft clicks | size chips S, M, L, XL pressed | −10 dB |
+| 10.22, 10.44, 10.66, 10.88 | stream ticks | per-size bars rise | −16 dB |
+| 11.85 | two-note chime (E6 → B6) | "Ready to produce" confirmation | −10 dB |
+| 13.42 | muffled thump | "MOQ ?" block lands (S5) | −10 dB |
+| 15.125 | whoosh (variation 1 of 4) | S6 whip move: peak at the temporal middle of the 0.30–1.35 s move | −9 dB (−10.5 dBFS) |
 
-* **Whooshes: 0.** No whip moves were used, so none were placed.
+* **Whooshes: 1** (one whip move in the whole video, in S6).
 * No effects on layout changes, drifts, the camera move, the window scale, the logo reveal or the CTA.
 
 **Riser** (`stems/riser.wav`):
@@ -122,21 +142,21 @@ None measurable: the speech states no figure. Two things are unverified:
 
 **Music** (`stems/music.wav`):
 * Original, 110 BPM, Am7–Fmaj7–G6–Em7.
-* Warm detuned-saw pad (low-passed at 900 Hz), soft sub kick, sine bass, rim and hats. No lead melody, no vocals.
+* Warm detuned-saw pad (low-passed at 900 Hz), soft sub kick, sine bass, rim and hats. No lead melody, no vocals. During the voice-free section (from 5.85 s) a quiet plucked arpeggio is added. The static gain is unchanged: music stays −24.0 LUFS integrated with no automation.
 * First beat on frame 1 (16.7 ms). 5 ms ramp in, 800 ms fade-out, one static gain throughout: no ducking, no automation.
 
 ## 8. Loudness (FFmpeg `ebur128=peak=true`)
 
 | Track | Integrated | True peak |
 |---|---|---|
-| voice.wav | **−14.0 LUFS** | −1.6 dBTP |
-| sfx.wav | −28.3 LUFS | −11.5 dBTP |
-| riser.wav | −25.0 LUFS | −15.6 dBTP |
-| music.wav | **−24.0 LUFS** (10 LU under the voice) | −10.4 dBTP |
-| master (WAV) | **−14.0 LUFS** | **−1.2 dBTP** |
-| final.mp4 (AAC) | **−14.0 LUFS** | **−1.2 dBTP** |
+| voice.wav | **−14.0 LUFS** (speech gated; silence after 5.85 s) | −1.6 dBTP |
+| sfx.wav | −24.5 LUFS | −10.5 dBTP |
+| riser.wav | −24.8 LUFS | −15.6 dBTP |
+| music.wav | **−24.0 LUFS** | −10.2 dBTP |
+| master (WAV) | **−16.0 LUFS** | **−1.2 dBTP** |
+| final.mp4 (AAC) | **−16.0 LUFS** | **−1.2 dBTP** |
 
-Master: the four stems are summed without changing any stem level. The raw sum measured −13.4 LUFS, so a single −0.58 dB master-bus trim brought it to −14.0. After that the true peak was −1.2 dBTP, so **no limiter was needed**, and none was applied.
+The four stems are summed without changing any stem level; the raw sum measures −17.9 LUFS. 14 of the 20 seconds are music-only at the brief's fixed −24 LUFS, so −14 LUFS was only reachable with about 6.7 dB of limiting on the voice, with gain reduction above 1 dB for 23 % of the timeline. That is audible, not transparent, so I mastered at **−16.0 LUFS**: +2.46 dB master trim, then a 5 ms look-ahead true-peak limiter at −1.25 dBTP. The limiter's maximum gain reduction is 3.1 dB; it exceeds 1 dB for 6.8 % of the time and 3 dB for 0.06 % (voice peaks only). If you'd rather have −14 regardless, change `TARGET` in `scripts/build_master.py` and re-run it.
 
 ## 9. Reconstructions, fallbacks and decisions
 
@@ -144,25 +164,23 @@ Master: the four stems are summed without changing any stem level. The raw sum m
 * **Fabro logo / interface.** No official logo or public product UI could be found. The **wordmark** (t-shirt glyph + "Fabro.") and the **MOQ order form** are reconstructions, not the brand's real assets. Replace them if a real logo exists.
 * **Language and captions.** You speak Telugu. Poppins has no Telugu glyphs, so captions are **romanised Telugu** ("Chaala mandi", "MOQ ekkuva", …), timed from the final-track Whisper word timings. The **cover title is in English**, "Is Fabro's MOQ really high?", built from the hook. The cover box sits at y 262–603 (two lines, 110 px, radius 30 px ≈ 2.8 %), centred on the box coordinates you specified.
 * **Highlight font.** Instrument Serif has no bold weight, so I used Instrument Serif Italic plus a 2.2 px same-colour stroke for the bold look: #FFFF00, 10 px black outline. Highlights are "MOQ ekkuva" and "chivari varaku", with 2 / 3 / 1 normal blocks between them and never two in a row.
-* **Ending caption position.** The specified band (y 1037–1306) covers your mouth and chin in the lean-in. "Never cover the face" won, so the ending captions sit at y ≈ 1730, below the CTA card over your hands. S1 captions are at the 941–1114 gap; S2 captions are at the bottom zone.
-* **CTA comment word.** Your CTA asks viewers to watch till the end and requests no comment word. The comment box types **"MOQ"** (the topic keyword) with a blinking caret, then the Post button is clicked and turns into a green check. No sound effects on the CTA.
+* **Spoken-CTA caption position.** The specified ending band (y 1037–1306) covers your mouth and chin in the lean-in. "Never cover the face" won, so the S3 captions use the bottom band (y ≈ 1400, below your chin). Captions end with the speech at 5.85 s. S1 captions are at the 941–1114 gap; S2 captions are at the bottom zone.
+* **CTA comment word.** Your CTA asks viewers to watch till the end and requests no comment word. The comment box types **"MOQ"** (the topic keyword) in the final segment (from 15.90 s), with a blinking caret, then the Post button is clicked and turns into a green check. No sound effects on the CTA.
+* **Extra footage for the 20 s cut.** Only about 3.4 s of silent footage where you look at the lens exists: 0.7–2.2 s, 6.0–6.95 s and 13.91–14.85 s. The rest is walking, reaching for the camera, or looking at the screen. I used 0.7–2.2 s (S5) and 13.91–14.86 s (the S3 hold). The remaining time is graphics.
+* **S4 order form** is a generic illustration of what MOQ means, not Fabro's real ordering system, and shows no quantities.
 * **Layout of "vaalla kosame ee video".** This line is addressed to the viewer, which would normally mean camera. It was given the fully visual layout because a 5.85 s video with three sentence parts needs all three layouts and no repeats.
 * **Rendering.** HyperFrames renders the graphics. Its static-frame dedup reused frame 0 for frame 1 in the alpha overlay, so I re-rendered with `HF_STATIC_DEDUP=false`. The assembly was split into verified lossless intermediates after a single-graph version desynced. A 1/60 timebase mismatch that delayed the overlay by one frame was also fixed.
 * **Never zoomed.** No zoom, push-in or movement was applied to the camera footage. The split card uses one fixed scale and position, and S3 is a straight scale to fill the frame.
 
-## 10. Final check results
+## 10. Final check results (20 s version)
 
-* **Format:** 1080×1920, 60/1 fps, 351 frames, H.264 High yuv420p BT.709; AAC 48 kHz stereo, 5.850 s. All layers end at END, with no trailing silence or leftover frames. ✔
-* **Cuts:** both sides were checked at frames 188|189 and 266|267. The previous shot holds to its last planned frame and the new one starts on its first planned frame. ✔
-* **Cover:** on frame 0 only (overlay alpha checked frame by frame). Frame 0 has no captions, and all intro graphics are below y 620. ✔
-* **Head layer:**
-  * Present on all 189 split frames, including frame 0.
-  * Head pixels above the edge and card pixels below it match the same source frame within 0.6/255 on **every** split frame, including the five fastest-motion frames. No separation and no mask errors. ✔
-  * The veil and shadow wrap-around bugs found on the first pass were fixed; above y 1000 the composite now matches the pure graphic.
-* **Captions:** start at frame 1 (16.7 ms), one position per segment, clear of the face, the card edge and the graphics. Yellow highlights alternate correctly. ✔
-* **Graphics:** within their safe areas, with no grids, spheres or dark areas. Motion blur appears only during camera movement. ✔
+* **Format:** 1080×1920, 60/1 fps, **1200 frames**, H.264 High yuv420p BT.709; AAC 48 kHz stereo, 20.000 s. All stems are 960 000 samples. ✔
+* **Segments:** each intermediate was verified at its exact frame count (189 / 78 / 141 / 360 / 90 / 342), and both sides of every cut were checked. ✔
+* **Cover:** on frame 0 only. Captions start at frame 1 and end at 5.85 s. ✔
+* **Head layer:** present from the first frame of S1 (verified frame by frame). Head and card pixels match the same source frame within 0.6/255 on every S1 frame, including the fastest motion. S5 uses the same pipeline. ✔
+* **Visuals:** no grids or dark areas. Motion blur appears only while the camera moves: S1 move, S4 push-in and pull-back, S6 whip. ✔
 * **Audio:**
-  * Each effect lands on its visual event. Zero whooshes, which is consistent with zero whip moves.
+  * Every effect sits on its visual event, and the only whoosh is centred on the S6 whip.
   * The riser ends at 3.150 s.
-  * The longest pause between the first and last word is 110 ms below −35 dB (70 ms below −40 dB), and the join gap is 120 ms. Every join is under 150 ms.
-  * Loudness targets are met exactly, and the true peak is −1.2 dBTP, within the −1 dBTP limit. ✔
+  * The edited speech has no pause over 150 ms (the longest is 110 ms below −35 dB).
+  * Voice and music are on target. The master is −16.0 LUFS, a deliberate deviation (§8), with true peak −1.2 dBTP. ✔
