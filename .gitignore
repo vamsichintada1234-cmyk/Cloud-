@@ -4,3 +4,7 @@ output/
 *.mp4
 *.MP4
 node_modules/
+input/
+work/reel/music.m4a
+work/reel/renders/
+work/reel/.hyperframes/
