@@ -1,0 +1,4 @@
+gdown
+librosa
+numpy
+srt

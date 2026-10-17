@@ -4,3 +4,5 @@ output/
 *.mp4
 *.MP4
 node_modules/
+reel-project/
+__pycache__/
