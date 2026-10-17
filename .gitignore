@@ -1,6 +1,26 @@
-raw/
-assets/
-output/
+# Remotion project media (repo root only, so skill folders named assets/ stay tracked)
+/raw/
+/assets/
+/output/
 *.mp4
 *.MP4
 node_modules/
+
+# HyperFrames video projects: track compositions, layout and stills; keep heavy media out of git
+videos/**/*.mov
+videos/**/*.MOV
+videos/**/*.webm
+videos/**/*.mkv
+videos/**/*.avi
+videos/**/*.m4v
+videos/**/*.mts
+videos/**/*.MTS
+videos/**/*.mxf
+videos/**/*.wav
+videos/**/*.mp3
+videos/**/*.m4a
+videos/**/*.aac
+videos/**/*.flac
+videos/**/*.ogg
+videos/*/renders/
+videos/*/.hyperframes/
