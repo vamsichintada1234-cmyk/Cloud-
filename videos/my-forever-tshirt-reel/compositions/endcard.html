@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #endcard-root {
+          position: absolute;
+          inset: 0;
+          background: #050505;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          font-family: "Oswald", sans-serif;
+          font-weight: 700;
+          text-align: center;
+        }
+        #endcard-label {
+          color: #25d366;
+          font-size: 72px;
+          line-height: 1;
+          letter-spacing: 0.01em;
+        }
+        #endcard-number {
+          color: #f4f4f0;
+          font-size: 112px;
+          line-height: 1.05;
+          letter-spacing: 0.03em;
+        }
+      </style>
+
+      <div data-hf-id="hf-znhw" id="endcard-root" data-composition-id="endcard" data-width="1080" data-height="1920">
+        <div data-hf-id="hf-qh15" id="endcard-label">WhatsApp</div>
+        <div data-hf-id="hf-86ay" id="endcard-number">7810024217</div>
+      </div>
+
+      <script>
+        const tl = gsap.timeline({ paused: true });
+        // Settles in on the downbeat, then holds like the reference card.
+        tl.fromTo(
+          ["#endcard-label", "#endcard-number"],
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.35, ease: "power2.out", stagger: 0.08 },
+          0,
+        );
+        window.__timelines["endcard"] = tl;
+      </script>
+    </template>
+  </body>
+</html>
