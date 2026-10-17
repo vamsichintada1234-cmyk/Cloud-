@@ -1,0 +1,88 @@
+[
+ {
+  "frame": 0,
+  "t": 0.0,
+  "shot": "hook: showing the print to camera",
+  "clip": 1,
+  "src": 2.4,
+  "speed": 1.0
+ },
+ {
+  "frame": 104,
+  "t": 3.467,
+  "shot": "holding up the blank black tee",
+  "clip": 1,
+  "src": 26.5,
+  "speed": 1.0
+ },
+ {
+  "frame": 141,
+  "t": 4.7,
+  "shot": "heat press: lift + press (long take)",
+  "clip": 1,
+  "src": 52.5,
+  "speed": 1.25
+ },
+ {
+  "frame": 282,
+  "t": 9.4,
+  "shot": "product wide on dark floor",
+  "clip": 2,
+  "src": 0.0,
+  "speed": 1.0
+ },
+ {
+  "frame": 338,
+  "t": 11.267,
+  "shot": "product partially in frame, sliding in",
+  "clip": 2,
+  "src": 26.0,
+  "speed": 1.0
+ },
+ {
+  "frame": 394,
+  "t": 13.133,
+  "shot": "extreme close-up on the artwork",
+  "clip": 2,
+  "src": 21.3,
+  "speed": 1.0
+ },
+ {
+  "frame": 470,
+  "t": 15.667,
+  "shot": "product rotated on dark floor",
+  "clip": 2,
+  "src": 37.5,
+  "speed": 1.0
+ },
+ {
+  "frame": 544,
+  "t": 18.133,
+  "shot": "showing the shirt to camera",
+  "clip": 3,
+  "src": 5.0,
+  "speed": 1.0
+ },
+ {
+  "frame": 571,
+  "t": 19.033,
+  "shot": "hand on shirt \u2014 0.5x slow-mo ramp",
+  "clip": 3,
+  "src": 5.9,
+  "speed": 0.5
+ },
+ {
+  "frame": 600,
+  "t": 20.0,
+  "shot": "final pose + gestures (Link in bio)",
+  "clip": 3,
+  "src": 9.8,
+  "speed": 1.0
+ },
+ {
+  "frame": 713,
+  "t": 23.767,
+  "shot": "end card",
+  "clip": null
+ }
+]

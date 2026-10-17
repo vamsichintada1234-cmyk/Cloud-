@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+      #whip { position: absolute; inset: 0; }
+      #base { position: absolute; inset: 0; width: 1080px; height: 1920px; object-fit: cover; }
+      /* reference caption: small white bold sans, centred just below middle */
+      #linkbio { position: absolute; left: 0; right: 0; top: 1300px; height: 90px; display: flex; align-items: center; justify-content: center;
+        font-family: "DejaVu Sans", "Liberation Sans", sans-serif; font-weight: 700; font-size: 70px; color: #fff;
+        text-shadow: 0 2px 6px rgba(0,0,0,.35); }
+      /* reference end card: green "WhatsApp" over a white serif number on black */
+      #endcard { position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 80px; }
+      #endcard .wa { font-family: "DejaVu Sans", "Liberation Sans", sans-serif; font-weight: 700; font-size: 74px; color: #1fae1f; line-height: 1.15; }
+      #endcard .num { font-family: "Liberation Serif", "DejaVu Serif", serif; font-weight: 700; font-size: 80px; color: #fff; line-height: 1.15; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="26" data-width="1080" data-height="1920">
+      <audio id="music" src="music.m4a" class="clip" data-start="0" data-duration="26" data-track-index="1"></audio>
+      <svg width="0" height="0" style="position:absolute">
+        <filter id="hblur" x="-10%" y="0" width="120%" height="100%"><feGaussianBlur id="hblurAmt" stdDeviation="0 0" /></filter>
+      </svg>
+      <div id="whip">
+        <video id="base" src="base.mp4" muted playsinline class="clip" data-start="0" data-duration="26" data-media-start="0" data-track-index="0"></video>
+      </div>
+      <div id="linkbio" class="clip" data-start="21.9" data-duration="1.8667" data-track-index="2">Link in bio</div>
+      <div id="endcard" class="clip" data-start="23.7667" data-duration="2.2333" data-track-index="3">
+        <div class="wa">WhatsApp</div>
+        <div class="num">7810024217</div>
+      </div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const F = 1 / 30;
+      // Motion-blur whip, like the reference's first three cuts: horizontal smear + slide across the cut.
+      [104, 141, 282].forEach((frame) => {
+        const t = frame / 30;
+        tl.set("#whip", { filter: "url(#hblur)" }, t - 3 * F);
+        tl.fromTo("#hblurAmt", { attr: { stdDeviation: "0 0" } }, { attr: { stdDeviation: "45 0" }, duration: 3 * F, ease: "power2.in", immediateRender: false }, t - 3 * F);
+        tl.fromTo("#whip", { x: 0 }, { x: -90, duration: 3 * F, ease: "power2.in", immediateRender: false }, t - 3 * F);
+        tl.fromTo("#hblurAmt", { attr: { stdDeviation: "45 0" } }, { attr: { stdDeviation: "0 0" }, duration: 3 * F, ease: "power2.out", immediateRender: false }, t);
+        tl.fromTo("#whip", { x: 90 }, { x: 0, duration: 3 * F, ease: "power2.out", immediateRender: false }, t);
+        tl.set("#whip", { filter: "none" }, t + 3 * F);
+      });
+      tl.set({}, {}, 26);
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
