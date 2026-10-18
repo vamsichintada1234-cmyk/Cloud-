@@ -26,34 +26,24 @@ const YELLOW = "#FFD60A";
 const LEAD = 3; // transitions start this many frames before the beat
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-// end card copy: swap in the brand name / handle here
-const END_CARD = { kicker: "CUSTOM PHOTO TEES", lines: ["YOUR PHOTO", "YOUR TEE"], cta: "DM TO ORDER" };
-
 type Exit = "cut" | "whip" | "whipUp" | "glitch" | "zoom";
 type Enter = "cut" | "whip" | "whipUp" | "glitch" | "flash" | "drop";
 type Text = { badge?: string; lines: [string, string]; accent?: string; underline?: boolean; built?: boolean };
 type Look = { scale: [number, number]; rotate?: [number, number]; filter?: string; vignette?: boolean };
 
+// no on-screen text: shots carry look + transition only (Headline stays available via `text`)
 const PLAN: Record<string, { text?: Text; look: Look; exit: Exit }> = {
   hook: { look: { scale: [1.0, 1.12], filter: "contrast(1.1) brightness(0.95)", vignette: true }, exit: "cut" },
-  step1: { text: { badge: "STEP 01", lines: ["PICK A", "PHOTO"] }, look: { scale: [1.04, 1.1] }, exit: "whip" },
-  step2: { text: { badge: "STEP 02", lines: ["PICK A", "TEE"] }, look: { scale: [1.04, 1.1] }, exit: "whip" },
-  step3: { text: { badge: "STEP 03", lines: ["LINE IT", "UP"] }, look: { scale: [1.04, 1.1] }, exit: "whip" },
-  step4: { text: { badge: "STEP 04", lines: ["HEAT", "PRESS"], accent: "." }, look: { scale: [1.04, 1.08] }, exit: "cut" },
-  wait: { text: { lines: ["WAIT FOR", "IT"], accent: "..." }, look: { scale: [1.0, 1.03] }, exit: "cut" },
-  doneA: { text: { lines: ["AND IT'S", "DONE"], accent: "." }, look: { scale: [1.06, 1.1] }, exit: "cut" },
-  doneB: { text: { lines: ["AND IT'S", "DONE"], accent: ".", built: true }, look: { scale: [1.04, 1.1] }, exit: "whipUp" },
-  made: {
-    text: { lines: ["MADE JUST", "FOR YOU"], accent: ".", underline: true },
-    look: { scale: [1.05, 1.14], filter: "brightness(0.85) contrast(1.2) saturate(1.1)", vignette: true },
-    exit: "whip",
-  },
-  any: {
-    text: { lines: ["ANY PHOTO", "ANY TEE"], accent: ".", underline: true },
-    look: { scale: [1.3, 1.5], rotate: [-3, 6], filter: "brightness(0.9) contrast(1.15)", vignette: true },
-    exit: "glitch",
-  },
-  wear: { text: { lines: ["WEAR HOW YOU", "FEEL"], accent: "." }, look: { scale: [1.04, 1.14] }, exit: "zoom" },
+  step1: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  step2: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  step3: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  step4: { look: { scale: [1.04, 1.08] }, exit: "cut" },
+  wait: { look: { scale: [1.0, 1.03] }, exit: "cut" },
+  doneA: { look: { scale: [1.06, 1.1] }, exit: "cut" },
+  doneB: { look: { scale: [1.04, 1.1] }, exit: "whipUp" },
+  made: { look: { scale: [1.05, 1.14], filter: "brightness(0.85) contrast(1.2) saturate(1.1)", vignette: true }, exit: "whip" },
+  any: { look: { scale: [1.3, 1.5], rotate: [-3, 6], filter: "brightness(0.9) contrast(1.15)", vignette: true }, exit: "glitch" },
+  wear: { look: { scale: [1.04, 1.14] }, exit: "zoom" },
 };
 
 const SHOTS = tl.shots.filter((s) => s.id !== "end");
@@ -198,34 +188,14 @@ const Shot: React.FC<{ i: number }> = ({ i }) => {
   );
 };
 
+/** End card: the tee hero lands on the final strong beat (zoom-blur settle) and pushes in slowly. */
 const EndCard: React.FC = () => {
   const frame = useCurrentFrame();
   const settle = interpolate(frame, [0, 6], [1.25, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
-  const kick = interpolate(frame, [2, 8], [0, 1], clamp);
-  const cta = interpolate(frame, [beatAt(END, 2), beatAt(END, 2) + 5], [0, 1], clamp);
   return (
     <AbsoluteFill style={{ backgroundColor: "black", transform: `scale(${settle})` }}>
-      <Img src={shotFile("endcard.jpg")} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.32, transform: `scale(${1.05 + frame * 0.002})` }} />
-      <AbsoluteFill style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0.2) 20%, rgba(0,0,0,0.85) 100%)" }} />
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", textAlign: "center", fontFamily: HEAD, color: "white" }}>
-        <div style={{ fontFamily: BADGE, fontWeight: 800, fontSize: 40, letterSpacing: "0.3em", color: YELLOW, opacity: kick, marginBottom: 20 }}>
-          {END_CARD.kicker}
-        </div>
-        {END_CARD.lines.map((l, i) => {
-          const p = interpolate(frame, [i * 3, i * 3 + 6], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
-          const dot = interpolate(frame, [beatAt(END, 1), beatAt(END, 1) + 3, beatAt(END, 1) + 6], [0, 1.35, 1], clamp);
-          return (
-            <div key={i} style={{ overflow: "hidden", fontSize: 190, lineHeight: 1.02 }}>
-              <div style={{ transform: `translateY(${(1 - p) * 105}%)` }}>
-                {l}
-                <span style={{ color: YELLOW, display: "inline-block", transform: `scale(${dot})` }}>.</span>
-              </div>
-            </div>
-          );
-        })}
-        <div style={{ height: 16, width: 420, background: YELLOW, borderRadius: 4, marginTop: 18, transform: `scaleX(${cta})` }} />
-        <div style={{ fontFamily: BADGE, fontWeight: 700, fontSize: 46, letterSpacing: "0.12em", marginTop: 34, opacity: cta }}>{END_CARD.cta}</div>
-      </AbsoluteFill>
+      <Img src={shotFile("endcard.jpg")} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.8) contrast(1.15)", transform: `scale(${1.05 + frame * 0.002})` }} />
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.75) 100%)" }} />
     </AbsoluteFill>
   );
 };
