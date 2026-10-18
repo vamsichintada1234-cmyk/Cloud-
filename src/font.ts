@@ -1,10 +1,10 @@
 import { continueRender, delayRender } from "remotion";
 
 /** Registers a local font file and blocks rendering until it has loaded. Returns the family name. */
-export const loadFont = (url: string, family = "BebasNeue"): string => {
+export const loadFont = (url: string, family = "BebasNeue", descriptors?: FontFaceDescriptors): string => {
   if (typeof document === "undefined") return family;
   const handle = delayRender(`Loading font ${family}`);
-  const face = new FontFace(family, `url('${url}')`);
+  const face = new FontFace(family, `url('${url}')`, descriptors);
   face
     .load()
     .then(() => {

@@ -1,0 +1,160 @@
+{
+ "fps": 25,
+ "width": 1080,
+ "height": 1920,
+ "totalFrames": 568,
+ "bpm": 129.97,
+ "beatFrames": [
+  4,
+  16,
+  27,
+  39,
+  50,
+  62,
+  73,
+  85,
+  97,
+  108,
+  120,
+  131,
+  143,
+  154,
+  166,
+  177,
+  189,
+  200,
+  212,
+  224,
+  235,
+  247,
+  258,
+  270,
+  281,
+  293,
+  304,
+  316,
+  327,
+  339,
+  350,
+  362,
+  374,
+  385,
+  397,
+  408,
+  420,
+  431,
+  443,
+  454,
+  466,
+  477,
+  489,
+  501,
+  512,
+  524,
+  535,
+  547,
+  558
+ ],
+ "dropBeat": 28,
+ "splice": {
+  "songOut": 11.25,
+  "songIn": 22.329
+ },
+ "shots": [
+  {
+   "id": "hook",
+   "beat": 0,
+   "beats": 9,
+   "from": 0,
+   "dur": 108,
+   "songBeat": 0
+  },
+  {
+   "id": "step1",
+   "beat": 9,
+   "beats": 4,
+   "from": 108,
+   "dur": 46,
+   "songBeat": 9
+  },
+  {
+   "id": "step2",
+   "beat": 13,
+   "beats": 4,
+   "from": 154,
+   "dur": 46,
+   "songBeat": 13
+  },
+  {
+   "id": "step3",
+   "beat": 17,
+   "beats": 3,
+   "from": 200,
+   "dur": 35,
+   "songBeat": 17
+  },
+  {
+   "id": "step4",
+   "beat": 20,
+   "beats": 4,
+   "from": 235,
+   "dur": 46,
+   "songBeat": 20
+  },
+  {
+   "id": "wait",
+   "beat": 24,
+   "beats": 4,
+   "from": 281,
+   "dur": 46,
+   "songBeat": 48
+  },
+  {
+   "id": "doneA",
+   "beat": 28,
+   "beats": 2,
+   "from": 327,
+   "dur": 23,
+   "songBeat": 52
+  },
+  {
+   "id": "doneB",
+   "beat": 30,
+   "beats": 2,
+   "from": 350,
+   "dur": 24,
+   "songBeat": 54
+  },
+  {
+   "id": "made",
+   "beat": 32,
+   "beats": 4,
+   "from": 374,
+   "dur": 46,
+   "songBeat": 56
+  },
+  {
+   "id": "any",
+   "beat": 36,
+   "beats": 4,
+   "from": 420,
+   "dur": 46,
+   "songBeat": 60
+  },
+  {
+   "id": "wear",
+   "beat": 40,
+   "beats": 5,
+   "from": 466,
+   "dur": 58,
+   "songBeat": 64
+  },
+  {
+   "id": "end",
+   "beat": 45,
+   "songBeat": 69,
+   "from": 524,
+   "dur": 44
+  }
+ ]
+}

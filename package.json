@@ -4,7 +4,9 @@
   "scripts": {
     "studio": "remotion studio",
     "render": "remotion render Hibro01 output/Hibro01_remotion.mp4",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prep:tee": "python3 tee_prep.py",
+    "render:tee": "remotion render TeeAd output/TeeAd.mp4"
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",
