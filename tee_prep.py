@@ -1,4 +1,4 @@
-"""TeeAd prep: analyse the music, derive a beat-synced cut from it, render the music edit and the
+"""TeeAd prep: analyse the music, derive a beat-synced cut from it, render the music and the
 per-shot clips, and write src/teeTimeline.json for the Remotion composition (src/TeeAd.tsx).
 
 No fixed timestamps: every cut is a beat index found by the analysis. Only the source in-points
@@ -9,7 +9,7 @@ import numpy as np, librosa, soundfile as sf
 
 ROOT = "/home/user/Cloud-/"
 RAW = ROOT + "raw/tee/"            # downloaded footage + music (gitignored)
-OUT = RAW + "shots/"               # rendered shot clips + music edit (served via public/raw)
+OUT = RAW + "shots/"               # rendered shot clips + music (served via public/raw)
 MUSIC = RAW + "audio.mp3"
 FPS = 25                           # matches the footage, so 1x shots need no frame-rate conversion
 W, H = 1080, 1920
@@ -67,88 +67,80 @@ print("quiet->hit events (beat, time, hit, quiet-perc ratio):",
 
 # ---------------------------------------------------------------- 2. plan the cut (in beats)
 WAIT_BEATS, DONE_BEATS, STEP_MAX, STEP_MIN = 4, 4, 4, 3
-N_STEPS = 3                                # step1, step3, step4 (step 2 cut from the edit)
 POST_MIN = DONE_BEATS + 3 * 4 + 3          # beats needed after the drop: done, 3 shots, end card
+
+# process shots between the hook and the breakdown, in story order. src clip, in-point (s);
+# anchor: (source time, beat within shot) locks an action to a beat; listed in the order they give up a beat
+PROCESS = [
+    dict(id="photo",   src="clip01", t=3.45),                 # holding up the printed photo, smiling
+    dict(id="shake",   src="clip01", t=15.40),                # shaking out the blank tee
+    dict(id="lay",     src="clip01", t=30.55),                # side profile, laying the tee on the press
+    dict(id="smooth",  src="clip01", t=32.60),                # smoothing the tee flat
+    dict(id="look",    src="clip01", t=40.00),                # cheeky look to camera
+    dict(id="print",   src="clip01", t=47.60),                # picking up the print
+    dict(id="show",    src="clip01", t=50.60),                # holding the print up
+    dict(id="place",   src="clip01", t=53.00),                # placing the print on the tee
+    dict(id="hand",    src="clip03", t=12.90),                # close-up: hand pressing the print flat
+    dict(id="lever",   src="clip01", t=None, anchor=(69.00, 1)),  # lever slams down on the shot's 2nd beat
+]
+SHORTEN = ["hand", "smooth", "show", "look", "shake"]       # shots that give up a beat first
 
 # hook rides the intro and cuts on the first breakdown->hit (if the intro has one), else after 2 bars
 intro = [k for k in events if beats[k] < 8]
 hook_end = intro[0] if intro else next(k for k in range(8, n_beats) if is_down[k])
 # the drop: strongest breakdown->hit that leaves room for the payoff after it
-drops = [k for k in events if k >= hook_end + 2 * STEP_MAX and n_beats - k >= POST_MIN]
+drops = [k for k in events if k >= hook_end + len(PROCESS) * STEP_MIN + WAIT_BEATS and n_beats - k >= POST_MIN]
 if not drops: sys.exit("no usable breakdown->drop found")
 drop = max(drops, key=lambda k: hit[k])
 wait_start = drop - WAIT_BEATS
 
-# the process steps, 3-4 beats each. If the song has more music between hook and breakdown than
-# the steps need, splice it out: jump from the end of the steps straight to the breakdown, keeping the
-# bar phase (steps_total chosen so both sides of the splice sit at the same position in the bar)
+# the song plays uncut, so the process shots fill every beat from the hook to the breakdown, 3-4 beats each
 gap = wait_start - hook_end
-if N_STEPS * STEP_MIN <= gap <= N_STEPS * STEP_MAX:
-    steps_total, splice = gap, None
-else:
-    steps_total = next(n for n in range(N_STEPS * STEP_MAX, N_STEPS * STEP_MIN - 1, -1) if (hook_end + n - wait_start) % 4 == 0)
-    splice = (hook_end + steps_total, wait_start)          # (song beat we leave, song beat we land on)
-steps = [STEP_MAX] * N_STEPS
-for j in [1, 0, 2]:                                        # shorten "line it up" first, the lever shot last
-    if sum(steps) > steps_total: steps[j] -= 1
+if not len(PROCESS) * STEP_MIN <= gap <= len(PROCESS) * STEP_MAX:
+    sys.exit(f"{gap} beats between hook and breakdown: need {-(-gap // STEP_MAX)}-{gap // STEP_MIN} process shots, have {len(PROCESS)}")
+for p in PROCESS: p["beats"] = STEP_MAX
+for sid in SHORTEN * 2:
+    if sum(p["beats"] for p in PROCESS) > gap: next(p for p in PROCESS if p["id"] == sid)["beats"] -= 1
+assert sum(p["beats"] for p in PROCESS) == gap and all(p["beats"] >= STEP_MIN for p in PROCESS)
 
 # end card on the last strong downbeat that still leaves a bar of music; payoff shots share the rest
 end_beat = max(k for k in range(n_beats) if is_down[k] and n_beats - k >= 4)
 rest = end_beat - (drop + DONE_BEATS)
 made = anyt = rest // 3
 wear = rest - made - anyt
-print(f"hook_end {hook_end}  steps {steps}  splice {splice}  wait {wait_start}  drop {drop}  end card {end_beat}  payoff {made}/{anyt}/{wear}")
+print(f"hook_end {hook_end}  process {[p['beats'] for p in PROCESS]}  wait {wait_start}  drop {drop}  end card {end_beat}  payoff {made}/{anyt}/{wear}")
 
-# ---------------------------------------------------------------- 3. music edit + video beat map
-CROSS = 0.010
+# ---------------------------------------------------------------- 3. music + beat map
 ya, sra = librosa.load(MUSIC, sr=44100, mono=False)
-if splice:
-    a, b = beats[splice[0]], beats[splice[1]]
-    na, nb, nc = int(a * sra), int(b * sra), int(CROSS * sra)
-    fade = np.sin(np.linspace(0, np.pi / 2, 2 * nc)) ** 2
-    seam = ya[:, na - nc:na + nc] * (1 - fade) + ya[:, nb - nc:nb + nc] * fade
-    edit = np.concatenate([ya[:, :na - nc], seam, ya[:, nb + nc:]], axis=1)
-    removed = b - a
-else:
-    edit, removed = ya, 0.0
-total = edit.shape[1] / sra
-
-# video-timeline beats: song beats before the splice, then song beats after it, shifted back
-song_beats = list(range(0, splice[0])) + list(range(splice[1], n_beats)) if splice else list(range(n_beats))
-vbeat_t = [beats[k] - (removed if splice and k >= splice[1] else 0) for k in song_beats]
-vb = {k: n for n, k in enumerate(song_beats)}              # song beat index -> video beat index
+total = ya.shape[1] / sra
 fr = lambda t: int(round(t * FPS))
-beat_frames = [fr(t) for t in vbeat_t]
+beat_frames = [fr(t) for t in beats]
 
 # ---------------------------------------------------------------- 4. shots (content = in-points, timing = beats)
-# role, src clip, in-point (s), speed, beats, anchor: (source time, beat within shot) to lock an action to a beat
 SHOTS = [
-    dict(id="hook",   src="clip02", t=2.0,   speed=1.0, beats=hook_end),        # tee hero, slow push-in
-    dict(id="step1",  src="clip01", t=3.45,  speed=1.0, beats=steps[0]),        # holding up the printed photo, smiling
-    dict(id="step3",  src="clip01", t=30.55, speed=1.0, beats=steps[1]),        # side profile, laying the tee on the press
-    dict(id="step4",  src="clip01", t=None,  speed=1.0, beats=steps[2], anchor=(69.00, 1)),  # lever slams down on beat 2
-    dict(id="wait",   src="clip01", t=75.0,  speed=1.0, beats=WAIT_BEATS),      # sitting, staring at the press
-    dict(id="doneA",  src="clip01", t=80.95, speed=1.0, beats=DONE_BEATS // 2), # press flies open on the drop
-    dict(id="doneB",  src="clip01", t=87.60, speed=1.0, beats=DONE_BEATS - DONE_BEATS // 2),  # finished tee held up
-    dict(id="made",   src="clip02", t=26.10, speed=0.5, beats=made),            # dark hero pull-back, slow motion
-    dict(id="any",    src="clip02", t=38.70, speed=0.5, beats=anyt),            # diagonal tee, slow motion
-    dict(id="wear",   src="clip03", t=18.40, speed=1.0, beats=wear),            # pointing at the viewer
+    dict(id="hook",   src="clip02", t=2.0,   beats=hook_end),        # tee hero, slow push-in
+    *PROCESS,
+    dict(id="wait",   src="clip01", t=75.0,  beats=WAIT_BEATS),      # sitting, staring at the press
+    dict(id="doneA",  src="clip01", t=80.95, beats=DONE_BEATS // 2), # press flies open on the drop
+    dict(id="doneB",  src="clip01", t=87.60, beats=DONE_BEATS - DONE_BEATS // 2),  # finished tee held up
+    dict(id="made",   src="clip02", t=26.10, beats=made, speed=0.5), # dark hero pull-back, slow motion
+    dict(id="any",    src="clip02", t=38.70, beats=anyt, speed=0.5), # diagonal tee, slow motion
+    dict(id="wear",   src="clip03", t=18.40, beats=wear),            # pointing at the viewer
 ]
-song_k = 0                                                 # walk the song beats shot by shot
+k = 0                                                      # walk the song beats shot by shot
 for s in SHOTS:
-    k0 = wait_start if s["id"] == "wait" else song_k        # the splice (if any) lands here
-    s["songBeat"] = int(k0)
-    s["beat"] = vb[k0]
-    s["from"] = beat_frames[s["beat"]] if s["beat"] else 0
-    s["dur"] = beat_frames[s["beat"] + s["beats"]] - s["from"]
-    song_k = k0 + s["beats"]
+    s.setdefault("speed", 1.0)
+    s["beat"] = s["songBeat"] = k
+    s["from"] = beat_frames[k] if k else 0
+    s["dur"] = beat_frames[k + s["beats"]] - s["from"]
+    k += s["beats"]
     if s.get("anchor"):
         at, nb_ = s.pop("anchor")
         s["t"] = round(at - (beat_frames[s["beat"] + nb_] - s["from"]) / FPS * s["speed"], 3)
 doneA = next(s for s in SHOTS if s["id"] == "doneA")
-assert doneA["songBeat"] == drop and song_k == end_beat, (doneA["songBeat"], song_k)
-end = dict(id="end", beat=vb[end_beat], songBeat=int(end_beat), **{"from": beat_frames[vb[end_beat]]})
+assert doneA["beat"] == drop and k == end_beat, (doneA["beat"], k)
 total_frames = fr(total)
+end = dict(id="end", beat=end_beat, songBeat=end_beat, **{"from": beat_frames[end_beat]})
 end["dur"] = total_frames - end["from"]
 
 for s in SHOTS:
@@ -159,7 +151,7 @@ if ANALYSE_ONLY: sys.exit()
 
 # ---------------------------------------------------------------- 5. render media
 os.makedirs(OUT, exist_ok=True)
-sf.write(OUT + "music_edit.wav", edit.T, sra)
+sf.write(OUT + "music.wav", ya.T, sra)
 
 def render(s):
     out = f"{OUT}{s['id']}.mp4"
@@ -180,8 +172,7 @@ if any(p.wait() for p in procs): sys.exit("ffmpeg failed")
 
 timeline = dict(
     fps=FPS, width=W, height=H, totalFrames=total_frames, bpm=round(bpm, 2),
-    beatFrames=beat_frames, dropBeat=vb[drop],
-    splice=dict(songOut=round(beats[splice[0]], 3), songIn=round(beats[splice[1]], 3)) if splice else None,
+    beatFrames=beat_frames, dropBeat=drop,
     shots=[{k: s[k] for k in ("id", "beat", "beats", "from", "dur", "songBeat")} for s in SHOTS] + [end],
 )
 with open(ROOT + "src/teeTimeline.json", "w") as fh: json.dump(timeline, fh, indent=1)

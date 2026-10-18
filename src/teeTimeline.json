@@ -2,7 +2,7 @@
  "fps": 25,
  "width": 1080,
  "height": 1920,
- "totalFrames": 522,
+ "totalFrames": 845,
  "bpm": 129.97,
  "beatFrames": [
   4,
@@ -49,13 +49,37 @@
   477,
   489,
   501,
-  512
+  512,
+  524,
+  535,
+  547,
+  558,
+  570,
+  581,
+  593,
+  604,
+  616,
+  627,
+  639,
+  651,
+  662,
+  674,
+  685,
+  697,
+  708,
+  720,
+  731,
+  743,
+  754,
+  766,
+  778,
+  789,
+  801,
+  812,
+  824,
+  835
  ],
- "dropBeat": 24,
- "splice": {
-  "songOut": 9.403,
-  "songIn": 22.329
- },
+ "dropBeat": 52,
  "shots": [
   {
    "id": "hook",
@@ -66,7 +90,7 @@
    "songBeat": 0
   },
   {
-   "id": "step1",
+   "id": "photo",
    "beat": 9,
    "beats": 4,
    "from": 108,
@@ -74,75 +98,131 @@
    "songBeat": 9
   },
   {
-   "id": "step3",
+   "id": "shake",
    "beat": 13,
-   "beats": 3,
+   "beats": 4,
    "from": 154,
-   "dur": 35,
+   "dur": 46,
    "songBeat": 13
   },
   {
-   "id": "step4",
-   "beat": 16,
+   "id": "lay",
+   "beat": 17,
    "beats": 4,
-   "from": 189,
+   "from": 200,
+   "dur": 47,
+   "songBeat": 17
+  },
+  {
+   "id": "smooth",
+   "beat": 21,
+   "beats": 4,
+   "from": 247,
    "dur": 46,
-   "songBeat": 16
+   "songBeat": 21
+  },
+  {
+   "id": "look",
+   "beat": 25,
+   "beats": 4,
+   "from": 293,
+   "dur": 46,
+   "songBeat": 25
+  },
+  {
+   "id": "print",
+   "beat": 29,
+   "beats": 4,
+   "from": 339,
+   "dur": 46,
+   "songBeat": 29
+  },
+  {
+   "id": "show",
+   "beat": 33,
+   "beats": 4,
+   "from": 385,
+   "dur": 46,
+   "songBeat": 33
+  },
+  {
+   "id": "place",
+   "beat": 37,
+   "beats": 4,
+   "from": 431,
+   "dur": 46,
+   "songBeat": 37
+  },
+  {
+   "id": "hand",
+   "beat": 41,
+   "beats": 3,
+   "from": 477,
+   "dur": 35,
+   "songBeat": 41
+  },
+  {
+   "id": "lever",
+   "beat": 44,
+   "beats": 4,
+   "from": 512,
+   "dur": 46,
+   "songBeat": 44
   },
   {
    "id": "wait",
-   "beat": 20,
+   "beat": 48,
    "beats": 4,
-   "from": 235,
+   "from": 558,
    "dur": 46,
    "songBeat": 48
   },
   {
    "id": "doneA",
-   "beat": 24,
+   "beat": 52,
    "beats": 2,
-   "from": 281,
+   "from": 604,
    "dur": 23,
    "songBeat": 52
   },
   {
    "id": "doneB",
-   "beat": 26,
+   "beat": 54,
    "beats": 2,
-   "from": 304,
-   "dur": 23,
+   "from": 627,
+   "dur": 24,
    "songBeat": 54
   },
   {
    "id": "made",
-   "beat": 28,
+   "beat": 56,
    "beats": 4,
-   "from": 327,
-   "dur": 47,
+   "from": 651,
+   "dur": 46,
    "songBeat": 56
   },
   {
    "id": "any",
-   "beat": 32,
+   "beat": 60,
    "beats": 4,
-   "from": 374,
+   "from": 697,
    "dur": 46,
    "songBeat": 60
   },
   {
    "id": "wear",
-   "beat": 36,
+   "beat": 64,
    "beats": 5,
-   "from": 420,
-   "dur": 57,
+   "from": 743,
+   "dur": 58,
    "songBeat": 64
   },
   {
    "id": "end",
-   "beat": 41,
+   "beat": 69,
    "songBeat": 69,
-   "from": 477,
-   "dur": 45
+   "from": 801,
+   "dur": 44
   }
  ]
 }

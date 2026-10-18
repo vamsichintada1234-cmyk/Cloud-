@@ -37,9 +37,16 @@ type Look = { scale: [number, number]; rotate?: [number, number]; filter?: strin
 // on-screen text lives only on the end card; shots carry look + transition only
 const PLAN: Record<string, { text?: Text; look: Look; exit: Exit }> = {
   hook: { look: { scale: [1.0, 1.12], filter: "contrast(1.1) brightness(0.95)", vignette: true }, exit: "cut" },
-  step1: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  step3: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  step4: { look: { scale: [1.04, 1.08] }, exit: "cut" },
+  photo: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  shake: { look: { scale: [1.04, 1.1] }, exit: "cut" },
+  lay: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  smooth: { look: { scale: [1.06, 1.12] }, exit: "cut" },
+  look: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  print: { look: { scale: [1.04, 1.1] }, exit: "cut" },
+  show: { look: { scale: [1.04, 1.1] }, exit: "whip" },
+  place: { look: { scale: [1.06, 1.12] }, exit: "cut" },
+  hand: { look: { scale: [1.0, 1.06] }, exit: "whip" },
+  lever: { look: { scale: [1.04, 1.08] }, exit: "cut" },
   wait: { look: { scale: [1.0, 1.03] }, exit: "cut" },
   doneA: { look: { scale: [1.06, 1.1] }, exit: "cut" },
   doneB: { look: { scale: [1.04, 1.1] }, exit: "whipUp" },
@@ -159,7 +166,7 @@ const Shot: React.FC<{ i: number }> = ({ i }) => {
     ty += ((random(`sy${frame}`) - 0.5) * amp) / 19.2;
   }
   // the lever shot punches in when the press slams shut (its second beat)
-  const punch = shot.id === "step4" ? interpolate(frame - beatAt(shot, 1), [0, 2, 8], [0, 0.05, 0], clamp) : 0;
+  const punch = shot.id === "lever" ? interpolate(frame - beatAt(shot, 1), [0, 2, 8], [0, 0.05, 0], clamp) : 0;
   const glitching = rgb > 0.5;
   const scale = interpolate(frame, [0, dur], look.scale) + punch;
   const rot = look.rotate ? interpolate(frame, [0, dur], look.rotate) : 0;
@@ -238,7 +245,7 @@ export const TeeAd: React.FC = () => {
       </Sequence>
       <AbsoluteFill style={{ background: "black", opacity: black }} />
       <Audio
-        src={shotFile("music_edit.wav")}
+        src={shotFile("music.wav")}
         volume={(fr) => interpolate(fr, [TEE_FRAMES - 30, TEE_FRAMES - 1], [1, 0], clamp)}
       />
     </AbsoluteFill>
