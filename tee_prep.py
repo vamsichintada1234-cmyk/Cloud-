@@ -66,10 +66,10 @@ print("quiet->hit events (beat, time, hit, quiet-perc ratio):",
       [(k, round(beats[k], 3), round(hit[k], 1), round(pause[k], 2)) for k in events])
 
 # ---------------------------------------------------------------- 2. plan the cut (in beats)
-WAIT_BEATS, DONE_BEATS, HOOK_BEATS = 4, 4, 8
+WAIT_BEATS, DONE_BEATS, HOOK_BEATS = 4, 4, 12      # hook holds 3 bars (step 2 is cut from the edit)
 STEP_BEATS = int(np.clip(round(1.8 / period), 2, 4))     # ~1.8 s per step: fewer beats on fast tracks, more on slow
 POST_MIN = DONE_BEATS + 3 * 4 + 3          # beats needed after the drop: done, 3 shots, end card
-PRE = HOOK_BEATS + 4 * STEP_BEATS + WAIT_BEATS             # beats needed before the drop
+PRE = HOOK_BEATS + 3 * STEP_BEATS + WAIT_BEATS             # beats needed before the drop
 
 # the drop: strongest breakdown->hit with room for the hook + steps + wait before it and the payoff after
 drops = [k for k in events if k >= PRE and n_beats - k >= POST_MIN]
@@ -101,7 +101,6 @@ beat_frames = [fr(beats[k] - beats[start]) for k in range(start, n_beats)]   # v
 SHOTS = [
     dict(id="hook",   src="clip02", t=2.0,   beats=HOOK_BEATS),      # tee hero, slow push-in
     dict(id="step1",  src="clip01", t=3.45,  beats=STEP_BEATS),      # holding up the printed photo, smiling
-    dict(id="step2",  src="clip03", t=4.40,  beats=STEP_BEATS),      # lifting the tee into frame
     dict(id="step3",  src="clip01", t=30.55, beats=STEP_BEATS),      # side profile, laying the tee on the press
     dict(id="step4",  src="clip01", t=None,  beats=STEP_BEATS, anchor=(69.00, 1)),  # lever slams down on beat 2
     dict(id="wait",   src="clip01", t=75.0,  beats=WAIT_BEATS),      # sitting, staring at the press

@@ -61,21 +61,13 @@
   {
    "id": "hook",
    "beat": 0,
-   "beats": 8,
+   "beats": 12,
    "from": 0,
-   "dur": 92,
+   "dur": 138,
    "songBeat": 24
   },
   {
    "id": "step1",
-   "beat": 8,
-   "beats": 4,
-   "from": 92,
-   "dur": 46,
-   "songBeat": 32
-  },
-  {
-   "id": "step2",
    "beat": 12,
    "beats": 4,
    "from": 138,

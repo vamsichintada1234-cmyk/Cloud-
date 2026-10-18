@@ -38,7 +38,6 @@ type Look = { scale: [number, number]; rotate?: [number, number]; filter?: strin
 const PLAN: Record<string, { text?: Text; look: Look; exit: Exit }> = {
   hook: { look: { scale: [1.0, 1.12], filter: "contrast(1.1) brightness(0.95)", vignette: true }, exit: "cut" },
   step1: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  step2: { look: { scale: [1.04, 1.1] }, exit: "whip" },
   step3: { look: { scale: [1.04, 1.1] }, exit: "whip" },
   step4: { look: { scale: [1.04, 1.08] }, exit: "cut" },
   wait: { look: { scale: [1.0, 1.03] }, exit: "cut" },
