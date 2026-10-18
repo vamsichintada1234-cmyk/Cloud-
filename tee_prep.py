@@ -67,6 +67,7 @@ print("quiet->hit events (beat, time, hit, quiet-perc ratio):",
 
 # ---------------------------------------------------------------- 2. plan the cut (in beats)
 WAIT_BEATS, DONE_BEATS, STEP_MAX, STEP_MIN = 4, 4, 4, 3
+N_STEPS = 3                                # step1, step3, step4 (step 2 cut from the edit)
 POST_MIN = DONE_BEATS + 3 * 4 + 3          # beats needed after the drop: done, 3 shots, end card
 
 # hook rides the intro and cuts on the first breakdown->hit (if the intro has one), else after 2 bars
@@ -78,17 +79,17 @@ if not drops: sys.exit("no usable breakdown->drop found")
 drop = max(drops, key=lambda k: hit[k])
 wait_start = drop - WAIT_BEATS
 
-# four process steps of 3-4 beats each. If the song has more music between hook and breakdown than
+# the process steps, 3-4 beats each. If the song has more music between hook and breakdown than
 # the steps need, splice it out: jump from the end of the steps straight to the breakdown, keeping the
 # bar phase (steps_total chosen so both sides of the splice sit at the same position in the bar)
 gap = wait_start - hook_end
-if 4 * STEP_MIN <= gap <= 4 * STEP_MAX:
+if N_STEPS * STEP_MIN <= gap <= N_STEPS * STEP_MAX:
     steps_total, splice = gap, None
 else:
-    steps_total = next(n for n in range(4 * STEP_MAX, 4 * STEP_MIN - 1, -1) if (hook_end + n - wait_start) % 4 == 0)
+    steps_total = next(n for n in range(N_STEPS * STEP_MAX, N_STEPS * STEP_MIN - 1, -1) if (hook_end + n - wait_start) % 4 == 0)
     splice = (hook_end + steps_total, wait_start)          # (song beat we leave, song beat we land on)
-steps = [STEP_MAX] * 4
-for j in [2, 1, 3, 0]:                                     # shorten "line it up" first, the lever shot last
+steps = [STEP_MAX] * N_STEPS
+for j in [1, 0, 2]:                                        # shorten "line it up" first, the lever shot last
     if sum(steps) > steps_total: steps[j] -= 1
 
 # end card on the last strong downbeat that still leaves a bar of music; payoff shots share the rest
@@ -124,9 +125,8 @@ beat_frames = [fr(t) for t in vbeat_t]
 SHOTS = [
     dict(id="hook",   src="clip02", t=2.0,   speed=1.0, beats=hook_end),        # tee hero, slow push-in
     dict(id="step1",  src="clip01", t=3.45,  speed=1.0, beats=steps[0]),        # holding up the printed photo, smiling
-    dict(id="step2",  src="clip03", t=4.40,  speed=1.0, beats=steps[1]),        # lifting the tee into frame
-    dict(id="step3",  src="clip01", t=30.55, speed=1.0, beats=steps[2]),        # side profile, laying the tee on the press
-    dict(id="step4",  src="clip01", t=None,  speed=1.0, beats=steps[3], anchor=(69.00, 1)),  # lever slams down on beat 2
+    dict(id="step3",  src="clip01", t=30.55, speed=1.0, beats=steps[1]),        # side profile, laying the tee on the press
+    dict(id="step4",  src="clip01", t=None,  speed=1.0, beats=steps[2], anchor=(69.00, 1)),  # lever slams down on beat 2
     dict(id="wait",   src="clip01", t=75.0,  speed=1.0, beats=WAIT_BEATS),      # sitting, staring at the press
     dict(id="doneA",  src="clip01", t=80.95, speed=1.0, beats=DONE_BEATS // 2), # press flies open on the drop
     dict(id="doneB",  src="clip01", t=87.60, speed=1.0, beats=DONE_BEATS - DONE_BEATS // 2),  # finished tee held up
@@ -145,7 +145,8 @@ for s in SHOTS:
     if s.get("anchor"):
         at, nb_ = s.pop("anchor")
         s["t"] = round(at - (beat_frames[s["beat"] + nb_] - s["from"]) / FPS * s["speed"], 3)
-assert SHOTS[6]["songBeat"] == drop and song_k == end_beat, (SHOTS[6]["songBeat"], song_k)
+doneA = next(s for s in SHOTS if s["id"] == "doneA")
+assert doneA["songBeat"] == drop and song_k == end_beat, (doneA["songBeat"], song_k)
 end = dict(id="end", beat=vb[end_beat], songBeat=int(end_beat), **{"from": beat_frames[vb[end_beat]]})
 total_frames = fr(total)
 end["dur"] = total_frames - end["from"]
