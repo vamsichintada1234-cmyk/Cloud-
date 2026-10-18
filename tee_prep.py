@@ -66,60 +66,44 @@ print("quiet->hit events (beat, time, hit, quiet-perc ratio):",
       [(k, round(beats[k], 3), round(hit[k], 1), round(pause[k], 2)) for k in events])
 
 # ---------------------------------------------------------------- 2. plan the cut (in beats)
-WAIT_BEATS, DONE_BEATS, STEP_MAX, STEP_MIN = 4, 4, 4, 3
+WAIT_BEATS, DONE_BEATS, HOOK_BEATS = 4, 4, 8
+STEP_BEATS = int(np.clip(round(1.8 / period), 2, 4))     # ~1.8 s per step: fewer beats on fast tracks, more on slow
 POST_MIN = DONE_BEATS + 3 * 4 + 3          # beats needed after the drop: done, 3 shots, end card
+PRE = HOOK_BEATS + 4 * STEP_BEATS + WAIT_BEATS             # beats needed before the drop
 
-# process shots between the hook and the breakdown, in story order. src clip, in-point (s);
-# anchor: (source time, beat within shot) locks an action to a beat; listed in the order they give up a beat
-PROCESS = [
-    dict(id="photo",   src="clip01", t=3.45),                 # holding up the printed photo, smiling
-    dict(id="shake",   src="clip01", t=15.40),                # shaking out the blank tee
-    dict(id="lay",     src="clip01", t=30.55),                # side profile, laying the tee on the press
-    dict(id="smooth",  src="clip01", t=32.60),                # smoothing the tee flat
-    dict(id="look",    src="clip01", t=40.00),                # cheeky look to camera
-    dict(id="print",   src="clip01", t=47.60),                # picking up the print
-    dict(id="show",    src="clip01", t=50.60),                # holding the print up
-    dict(id="place",   src="clip01", t=53.00),                # placing the print on the tee
-    dict(id="hand",    src="clip03", t=12.90),                # close-up: hand pressing the print flat
-    dict(id="lever",   src="clip01", t=None, anchor=(69.00, 1)),  # lever slams down on the shot's 2nd beat
-]
-SHORTEN = ["hand", "smooth", "show", "look", "shake"]       # shots that give up a beat first
-
-# hook rides the intro and cuts on the first breakdown->hit (if the intro has one), else after 2 bars
-intro = [k for k in events if beats[k] < 8]
-hook_end = intro[0] if intro else next(k for k in range(8, n_beats) if is_down[k])
-# the drop: strongest breakdown->hit that leaves room for the payoff after it
-drops = [k for k in events if k >= hook_end + len(PROCESS) * STEP_MIN + WAIT_BEATS and n_beats - k >= POST_MIN]
+# the drop: strongest breakdown->hit with room for the hook + steps + wait before it and the payoff after
+drops = [k for k in events if k >= PRE and n_beats - k >= POST_MIN]
 if not drops: sys.exit("no usable breakdown->drop found")
 drop = max(drops, key=lambda k: hit[k])
 wait_start = drop - WAIT_BEATS
-
-# the song plays uncut, so the process shots fill every beat from the hook to the breakdown, 3-4 beats each
-gap = wait_start - hook_end
-if not len(PROCESS) * STEP_MIN <= gap <= len(PROCESS) * STEP_MAX:
-    sys.exit(f"{gap} beats between hook and breakdown: need {-(-gap // STEP_MAX)}-{gap // STEP_MIN} process shots, have {len(PROCESS)}")
-for p in PROCESS: p["beats"] = STEP_MAX
-for sid in SHORTEN * 2:
-    if sum(p["beats"] for p in PROCESS) > gap: next(p for p in PROCESS if p["id"] == sid)["beats"] -= 1
-assert sum(p["beats"] for p in PROCESS) == gap and all(p["beats"] >= STEP_MIN for p in PROCESS)
+# the edit uses one continuous section of the song, starting where the hook has to begin
+start = drop - PRE
 
 # end card on the last strong downbeat that still leaves a bar of music; payoff shots share the rest
 end_beat = max(k for k in range(n_beats) if is_down[k] and n_beats - k >= 4)
 rest = end_beat - (drop + DONE_BEATS)
 made = anyt = rest // 3
 wear = rest - made - anyt
-print(f"hook_end {hook_end}  process {[p['beats'] for p in PROCESS]}  wait {wait_start}  drop {drop}  end card {end_beat}  payoff {made}/{anyt}/{wear}")
+print(f"section from beat {start} ({beats[start]:.2f}s)  steps {STEP_BEATS} beats  wait {wait_start}  drop {drop}  end card {end_beat}  payoff {made}/{anyt}/{wear}")
 
-# ---------------------------------------------------------------- 3. music + beat map
+# ---------------------------------------------------------------- 3. music section + beat map
+FADE_IN = 0.02                                             # de-click the section start
 ya, sra = librosa.load(MUSIC, sr=44100, mono=False)
-total = ya.shape[1] / sra
+section = ya[:, int(beats[start] * sra):].copy()
+nf = int(FADE_IN * sra)
+section[:, :nf] *= np.linspace(0, 1, nf)
+total = section.shape[1] / sra
 fr = lambda t: int(round(t * FPS))
-beat_frames = [fr(t) for t in beats]
+beat_frames = [fr(beats[k] - beats[start]) for k in range(start, n_beats)]   # video beat n = song beat start + n
 
 # ---------------------------------------------------------------- 4. shots (content = in-points, timing = beats)
+# src clip, in-point (s), speed; anchor: (source time, beat within shot) locks an action to a beat
 SHOTS = [
-    dict(id="hook",   src="clip02", t=2.0,   beats=hook_end),        # tee hero, slow push-in
-    *PROCESS,
+    dict(id="hook",   src="clip02", t=2.0,   beats=HOOK_BEATS),      # tee hero, slow push-in
+    dict(id="step1",  src="clip01", t=3.45,  beats=STEP_BEATS),      # holding up the printed photo, smiling
+    dict(id="step2",  src="clip03", t=4.40,  beats=STEP_BEATS),      # lifting the tee into frame
+    dict(id="step3",  src="clip01", t=30.55, beats=STEP_BEATS),      # side profile, laying the tee on the press
+    dict(id="step4",  src="clip01", t=None,  beats=STEP_BEATS, anchor=(69.00, 1)),  # lever slams down on beat 2
     dict(id="wait",   src="clip01", t=75.0,  beats=WAIT_BEATS),      # sitting, staring at the press
     dict(id="doneA",  src="clip01", t=80.95, beats=DONE_BEATS // 2), # press flies open on the drop
     dict(id="doneB",  src="clip01", t=87.60, beats=DONE_BEATS - DONE_BEATS // 2),  # finished tee held up
@@ -127,20 +111,20 @@ SHOTS = [
     dict(id="any",    src="clip02", t=38.70, beats=anyt, speed=0.5), # diagonal tee, slow motion
     dict(id="wear",   src="clip03", t=18.40, beats=wear),            # pointing at the viewer
 ]
-k = 0                                                      # walk the song beats shot by shot
+n = 0                                                      # walk the video beats shot by shot
 for s in SHOTS:
     s.setdefault("speed", 1.0)
-    s["beat"] = s["songBeat"] = k
-    s["from"] = beat_frames[k] if k else 0
-    s["dur"] = beat_frames[k + s["beats"]] - s["from"]
-    k += s["beats"]
+    s["beat"], s["songBeat"] = n, start + n
+    s["from"] = beat_frames[n]
+    s["dur"] = beat_frames[n + s["beats"]] - s["from"]
+    n += s["beats"]
     if s.get("anchor"):
         at, nb_ = s.pop("anchor")
         s["t"] = round(at - (beat_frames[s["beat"] + nb_] - s["from"]) / FPS * s["speed"], 3)
 doneA = next(s for s in SHOTS if s["id"] == "doneA")
-assert doneA["beat"] == drop and k == end_beat, (doneA["beat"], k)
+assert doneA["songBeat"] == drop and start + n == end_beat, (doneA["songBeat"], start + n)
 total_frames = fr(total)
-end = dict(id="end", beat=end_beat, songBeat=end_beat, **{"from": beat_frames[end_beat]})
+end = dict(id="end", beat=end_beat - start, songBeat=end_beat, **{"from": beat_frames[end_beat - start]})
 end["dur"] = total_frames - end["from"]
 
 for s in SHOTS:
@@ -151,7 +135,7 @@ if ANALYSE_ONLY: sys.exit()
 
 # ---------------------------------------------------------------- 5. render media
 os.makedirs(OUT, exist_ok=True)
-sf.write(OUT + "music.wav", ya.T, sra)
+sf.write(OUT + "music.wav", section.T, sra)
 
 def render(s):
     out = f"{OUT}{s['id']}.mp4"
@@ -172,7 +156,7 @@ if any(p.wait() for p in procs): sys.exit("ffmpeg failed")
 
 timeline = dict(
     fps=FPS, width=W, height=H, totalFrames=total_frames, bpm=round(bpm, 2),
-    beatFrames=beat_frames, dropBeat=drop,
+    beatFrames=beat_frames, dropBeat=drop - start, songStart=round(beats[start], 3),
     shots=[{k: s[k] for k in ("id", "beat", "beats", "from", "dur", "songBeat")} for s in SHOTS] + [end],
 )
 with open(ROOT + "src/teeTimeline.json", "w") as fh: json.dump(timeline, fh, indent=1)

@@ -34,25 +34,26 @@ type Enter = "cut" | "whip" | "whipUp" | "glitch" | "flash" | "drop";
 type Text = { badge?: string; lines: [string, string]; accent?: string; underline?: boolean; built?: boolean };
 type Look = { scale: [number, number]; rotate?: [number, number]; filter?: string; vignette?: boolean };
 
-// on-screen text lives only on the end card; shots carry look + transition only
 const PLAN: Record<string, { text?: Text; look: Look; exit: Exit }> = {
   hook: { look: { scale: [1.0, 1.12], filter: "contrast(1.1) brightness(0.95)", vignette: true }, exit: "cut" },
-  photo: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  shake: { look: { scale: [1.04, 1.1] }, exit: "cut" },
-  lay: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  smooth: { look: { scale: [1.06, 1.12] }, exit: "cut" },
-  look: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  print: { look: { scale: [1.04, 1.1] }, exit: "cut" },
-  show: { look: { scale: [1.04, 1.1] }, exit: "whip" },
-  place: { look: { scale: [1.06, 1.12] }, exit: "cut" },
-  hand: { look: { scale: [1.0, 1.06] }, exit: "whip" },
-  lever: { look: { scale: [1.04, 1.08] }, exit: "cut" },
-  wait: { look: { scale: [1.0, 1.03] }, exit: "cut" },
-  doneA: { look: { scale: [1.06, 1.1] }, exit: "cut" },
-  doneB: { look: { scale: [1.04, 1.1] }, exit: "whipUp" },
-  made: { look: { scale: [1.05, 1.14], filter: "brightness(0.85) contrast(1.2) saturate(1.1)", vignette: true }, exit: "whip" },
-  any: { look: { scale: [1.3, 1.5], rotate: [-3, 6], filter: "brightness(0.9) contrast(1.15)", vignette: true }, exit: "glitch" },
-  wear: { look: { scale: [1.04, 1.14] }, exit: "zoom" },
+  step1: { text: { badge: "STEP 01", lines: ["PICK A", "PHOTO"] }, look: { scale: [1.04, 1.1] }, exit: "whip" },
+  step2: { text: { badge: "STEP 02", lines: ["PICK A", "TEE"] }, look: { scale: [1.04, 1.1] }, exit: "whip" },
+  step3: { text: { badge: "STEP 03", lines: ["LINE IT", "UP"] }, look: { scale: [1.04, 1.1] }, exit: "whip" },
+  step4: { text: { badge: "STEP 04", lines: ["HEAT", "PRESS"], accent: "." }, look: { scale: [1.04, 1.08] }, exit: "cut" },
+  wait: { text: { lines: ["WAIT FOR", "IT"], accent: "..." }, look: { scale: [1.0, 1.03] }, exit: "cut" },
+  doneA: { text: { lines: ["AND IT'S", "DONE"], accent: "." }, look: { scale: [1.06, 1.1] }, exit: "cut" },
+  doneB: { text: { lines: ["AND IT'S", "DONE"], accent: ".", built: true }, look: { scale: [1.04, 1.1] }, exit: "whipUp" },
+  made: {
+    text: { lines: ["MADE JUST", "FOR YOU"], accent: ".", underline: true },
+    look: { scale: [1.05, 1.14], filter: "brightness(0.85) contrast(1.2) saturate(1.1)", vignette: true },
+    exit: "whip",
+  },
+  any: {
+    text: { lines: ["ANY PHOTO", "ANY TEE"], accent: ".", underline: true },
+    look: { scale: [1.3, 1.5], rotate: [-3, 6], filter: "brightness(0.9) contrast(1.15)", vignette: true },
+    exit: "glitch",
+  },
+  wear: { text: { lines: ["WEAR HOW YOU", "FEEL"], accent: "." }, look: { scale: [1.04, 1.14] }, exit: "zoom" },
 };
 
 const SHOTS = tl.shots.filter((s) => s.id !== "end");
@@ -166,7 +167,7 @@ const Shot: React.FC<{ i: number }> = ({ i }) => {
     ty += ((random(`sy${frame}`) - 0.5) * amp) / 19.2;
   }
   // the lever shot punches in when the press slams shut (its second beat)
-  const punch = shot.id === "lever" ? interpolate(frame - beatAt(shot, 1), [0, 2, 8], [0, 0.05, 0], clamp) : 0;
+  const punch = shot.id === "step4" ? interpolate(frame - beatAt(shot, 1), [0, 2, 8], [0, 0.05, 0], clamp) : 0;
   const glitching = rgb > 0.5;
   const scale = interpolate(frame, [0, dur], look.scale) + punch;
   const rot = look.rotate ? interpolate(frame, [0, dur], look.rotate) : 0;
