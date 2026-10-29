@@ -57,6 +57,26 @@ function saveGems(n: number): void {
   }
 }
 let bankedGems = loadGems();
+let shownAlive = -1;
+
+/** Enemy tracker: one head per guard (crossed out when down), or a count for big crowds. */
+function renderTargets(): void {
+  const alive = game.aliveGuards;
+  if (alive === shownAlive) return;
+  shownAlive = alive;
+  const el = $("targets");
+  const total = game.guards.length;
+  if (total > 24) {
+    el.textContent = `${alive} / ${total} left`;
+    return;
+  }
+  el.textContent = "";
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement("span");
+    d.className = i < total - alive ? "foe down" : "foe";
+    el.appendChild(d);
+  }
+}
 
 function startLevel(lv: number): void {
   level = lv;
@@ -66,8 +86,11 @@ function startLevel(lv: number): void {
     autopilot: params.bench > 0,
     invulnerable: params.bench > 0,
   });
+  // Handy for poking at the game from devtools during development.
+  if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   $("overlay").classList.remove("show");
-  $("level").textContent = `Level ${lv}`;
+  $("level").textContent = `LEVEL ${lv}`;
+  shownAlive = -1;
   const q = new URLSearchParams(location.search);
   q.set("level", String(lv));
   history.replaceState(null, "", `${location.pathname}?${q.toString()}`);
@@ -172,6 +195,7 @@ function benchResult(): BenchResult {
 }
 
 if (params.bench) {
+  renderer.fitWholeMap = true;
   $("bench").style.display = "block";
   $("hint").style.display = "none";
 }
@@ -197,18 +221,15 @@ function frame(now: number): void {
   game.update(dt);
   const t1 = performance.now();
   const rays = game.guards.length > 200 ? 8 : game.guards.length > 60 ? 14 : 24;
-  renderer.draw(game, rays);
+  renderer.draw(game, rays, dt);
   const t2 = performance.now();
   if (renderer.marker) {
     renderer.marker.t += dt;
     if (renderer.marker.t > 0.4) renderer.marker = null;
   }
 
-  $("targets").textContent = `Targets ${game.aliveGuards}/${game.guards.length}`;
+  renderTargets();
   $("gems").textContent = `◆ ${bankedGems + game.gemsCollected}`;
-  const hpFill = $("hpFill");
-  hpFill.style.width = `${game.player.hp}%`;
-  hpFill.style.background = game.player.hp > 50 ? "#4ade80" : game.player.hp > 25 ? "#facc15" : "#ef4444";
 
   if (params.bench && !benchDone) {
     if (!benchStart) benchStart = now;

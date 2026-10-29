@@ -22,6 +22,7 @@ export interface Guard {
   deadT: number;
   lookBase: number;
   lookT: number;
+  stride: number;
 }
 
 export interface Player {
@@ -33,6 +34,7 @@ export interface Player {
   lungeT: number;
   hurtT: number;
   repathT: number;
+  stride: number;
 }
 
 export interface Bullet {
@@ -55,6 +57,16 @@ export interface Splat {
   x: number;
   y: number;
   r: number;
+  seed: number;
+}
+
+export interface Effect {
+  kind: "slash" | "text";
+  x: number;
+  y: number;
+  angle: number;
+  t: number;
+  text?: string;
 }
 
 export type Outcome = "playing" | "won" | "lost";
@@ -73,6 +85,9 @@ export class Game {
   bullets: Bullet[] = [];
   gems: Gem[] = [];
   splats: Splat[] = [];
+  effects: Effect[] = [];
+  /** Screen shake strength, decays every frame. */
+  shake = 0;
   outcome: Outcome = "playing";
   gemsCollected = 0;
   kills = 0;
@@ -98,7 +113,7 @@ export class Game {
     this.rng = mulberry32(lv * 104729 + opts.guards);
     const { grid, spawn } = generateMap(lv, opts.guards);
     this.grid = grid;
-    this.player = { x: spawn.x, y: spawn.y, angle: -Math.PI / 2, hp: 100, path: [], lungeT: 0, hurtT: 0, repathT: 0 };
+    this.player = { x: spawn.x, y: spawn.y, angle: -Math.PI / 2, hp: 100, path: [], lungeT: 0, hurtT: 0, repathT: 0, stride: 0 };
     this.spawnGuards();
   }
 
@@ -141,6 +156,7 @@ export class Game {
         deadT: 0,
         lookBase: a,
         lookT: this.rng() * 10,
+        stride: 0,
       });
     }
   }
@@ -162,6 +178,13 @@ export class Game {
     }
     this.updateBullets(dt);
     this.updateGems(dt);
+    this.shake = Math.max(0, this.shake - dt * 30);
+    let w = 0;
+    for (const e of this.effects) {
+      e.t += dt;
+      if (e.t < (e.kind === "slash" ? 0.25 : 0.9)) this.effects[w++] = e;
+    }
+    this.effects.length = w;
 
     if (this.outcome === "playing" && this.aliveGuards === 0) {
       if (this.opts.autopilot) {
@@ -200,7 +223,7 @@ export class Game {
       mx /= len;
       my /= len;
       const speed = this.playerSpeed * (p.lungeT > 0 ? 1.6 : 1);
-      moveCircle(this.grid, p, mx * speed * dt, my * speed * dt, PLAYER_RADIUS);
+      p.stride += moveCircle(this.grid, p, mx * speed * dt, my * speed * dt, PLAYER_RADIUS);
       p.angle = turnToward(p.angle, Math.atan2(my, mx), 14 * dt);
     }
   }
@@ -318,7 +341,7 @@ export class Game {
       return;
     }
     const step = Math.min(d, speed * dt);
-    moveCircle(this.grid, g, (dx / d) * step, (dy / d) * step, GUARD_RADIUS);
+    g.stride += moveCircle(this.grid, g, (dx / d) * step, (dy / d) * step, GUARD_RADIUS);
     g.angle = turnToward(g.angle, Math.atan2(dy, dx), 6 * dt);
   }
 
@@ -352,8 +375,11 @@ export class Game {
       this.kills++;
       p.lungeT = 0.15;
       p.angle = Math.atan2(g.y - p.y, g.x - p.x);
-      this.splats.push({ x: g.x, y: g.y, r: 10 + this.rng() * 8 });
+      this.splats.push({ x: g.x, y: g.y, r: 10 + this.rng() * 8, seed: Math.floor(this.rng() * 1e9) });
+      this.effects.push({ kind: "slash", x: g.x, y: g.y, angle: p.angle, t: 0 });
+      this.shake = Math.max(this.shake, 6);
       const n = 3 + Math.floor(this.rng() * 3);
+      this.effects.push({ kind: "text", x: g.x, y: g.y - 18, angle: 0, t: 0, text: `+${n}` });
       for (let k = 0; k < n; k++) {
         const a = this.rng() * Math.PI * 2;
         const s = 60 + this.rng() * 90;
@@ -374,6 +400,7 @@ export class Game {
         if (!this.opts.invulnerable) {
           p.hp = Math.max(0, p.hp - BULLET_DAMAGE);
           p.hurtT = 0.25;
+          this.shake = Math.max(this.shake, 4);
           if (p.hp === 0) this.outcome = "lost";
         }
         continue;
@@ -425,9 +452,13 @@ export class Game {
   }
 }
 
-function moveCircle(grid: Grid, e: Vec, dx: number, dy: number, r: number): void {
+/** Moves a circle with wall sliding; returns the distance actually travelled. */
+function moveCircle(grid: Grid, e: Vec, dx: number, dy: number, r: number): number {
+  const x0 = e.x;
+  const y0 = e.y;
   if (grid.circleFree(e.x + dx, e.y, r)) e.x += dx;
   if (grid.circleFree(e.x, e.y + dy, r)) e.y += dy;
+  return Math.hypot(e.x - x0, e.y - y0);
 }
 
 export function angleDiff(a: number, b: number): number {

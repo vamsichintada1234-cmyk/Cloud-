@@ -9,7 +9,7 @@
       body {
         margin: 0;
         height: 100%;
-        background: #151821;
+        background: #0d0f16;
         color: #e8ecf4;
         font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         overflow: hidden;
@@ -25,33 +25,63 @@
       #hud {
         position: fixed;
         inset: 0 0 auto 0;
-        height: 48px;
-        display: flex;
+        height: 64px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
-        gap: 18px;
         padding: 0 16px;
-        font-size: 15px;
-        font-weight: 600;
         pointer-events: none;
       }
-      #hud .spacer {
-        flex: 1;
+      #center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
       }
-      #hp {
-        width: 120px;
-        height: 10px;
-        border-radius: 5px;
-        background: #2a2f3c;
-        overflow: hidden;
+      #level {
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        padding: 3px 14px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.1);
       }
-      #hpFill {
-        height: 100%;
-        width: 100%;
-        background: #4ade80;
-        transition: width 0.15s;
+      #targets {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+        max-width: 60vw;
+        font-size: 13px;
+        font-weight: 800;
+      }
+      .foe {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #e8a33d;
+        box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+        position: relative;
+      }
+      .foe.down {
+        background: #4a4f5c;
+      }
+      .foe.down::after {
+        content: "";
+        position: absolute;
+        inset: 5px -1px;
+        background: #e3263b;
+        transform: rotate(-45deg);
+        border-radius: 2px;
       }
       .gem {
-        color: #4ff0ff;
+        justify-self: end;
+        color: #43e3ff;
+        font-size: 18px;
+        font-weight: 900;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.35);
       }
       #overlay {
         position: fixed;
@@ -119,11 +149,12 @@
   <body>
     <canvas id="game"></canvas>
     <div id="hud">
-      <span id="level">Level 1</span>
-      <span id="targets">Targets 0</span>
-      <span class="spacer"></span>
+      <span></span>
+      <div id="center">
+        <span id="level">LEVEL 1</span>
+        <div id="targets"></div>
+      </div>
       <span class="gem" id="gems">◆ 0</span>
-      <div id="hp"><div id="hpFill"></div></div>
     </div>
     <div id="hint">Tap or click to move · WASD / arrows also work · Reach a guard to take them out · Stay out of the cones</div>
     <pre id="bench"></pre>
