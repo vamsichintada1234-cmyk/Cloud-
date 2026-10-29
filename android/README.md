@@ -17,4 +17,4 @@ gradle assembleRelease                    # → app/build/outputs/apk/release/ap
 ```
 
 The release APK is signed with the debug key so it can be sideloaded; sign with your own keystore for the Play Store.
-arm64-v8a only (practically every phone from the last several years). Needs Android 7.0+.
+Includes arm64-v8a and armeabi-v7a (32-bit Android, common on budget phones). Needs Android 7.0+.

@@ -16,9 +16,10 @@ android {
         applicationId "com.refcut.app"
         minSdk 24
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
-        ndk { abiFilters "arm64-v8a" }
+        versionCode 2
+        versionName "1.1"
+        // 64-bit phones and 32-bit Android (common on budget / Android Go phones)
+        ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++17"
@@ -69,13 +70,18 @@ def copyNodeApp = tasks.register("copyNodeApp", Sync) {
     into genAssets.map { it.dir("nodeapp") }
 }
 
-// libnode.so and ffmpeg (renamed lib*.so so Android installs it as an executable native lib)
+// libnode.so and ffmpeg per ABI (ffmpeg renamed lib*.so so Android installs it as an executable native lib)
+def abis = ["arm64-v8a", "armeabi-v7a"]
 def copyNativeBins = tasks.register("copyNativeBins", Sync) {
-    from("${thirdParty}/nodejs-mobile/bin/arm64-v8a/libnode.so") { into "arm64-v8a" }
-    from("${thirdParty}/ffmpeg/ffmpeg") { into "arm64-v8a"; rename { "libffmpeg.so" } }
+    abis.each { abi ->
+        from("${thirdParty}/nodejs-mobile/bin/${abi}/libnode.so") { into abi }
+        from("${thirdParty}/ffmpeg/${abi}/ffmpeg") { into abi; rename { "libffmpeg.so" } }
+    }
     into genJni
     doFirst {
-        if (!file("${thirdParty}/ffmpeg/ffmpeg").exists()) throw new GradleException("Run android/fetch-binaries.sh first")
+        abis.each { abi ->
+            if (!file("${thirdParty}/ffmpeg/${abi}/ffmpeg").exists()) throw new GradleException("Run android/fetch-binaries.sh first")
+        }
     }
 }
 

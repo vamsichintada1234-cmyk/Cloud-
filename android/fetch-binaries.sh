@@ -10,10 +10,13 @@ if [ ! -f nodejs-mobile/bin/arm64-v8a/libnode.so ]; then
   curl -fSL -o nodejs-mobile.zip "https://github.com/nodejs-mobile/nodejs-mobile/releases/download/v${NODE_VER}/nodejs-mobile-v${NODE_VER}-android.zip"
   rm -rf nodejs-mobile && unzip -q nodejs-mobile.zip -d nodejs-mobile && rm nodejs-mobile.zip
 fi
-if [ ! -f ffmpeg/ffmpeg ]; then
-  curl -fSL -o ffmpeg.tar.xz https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz
-  curl -fSL -o ffmpeg.tar.xz.md5 https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz.md5
+fetch_ffmpeg() { # <abi> <johnvansickle arch>
+  [ -f "ffmpeg/$1/ffmpeg" ] && return
+  local url="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$2-static.tar.xz"
+  curl -fSL -o ffmpeg.tar.xz "$url" && curl -fSL -o ffmpeg.tar.xz.md5 "$url.md5"
   [ "$(md5sum < ffmpeg.tar.xz | cut -d' ' -f1)" = "$(cut -d' ' -f1 ffmpeg.tar.xz.md5)" ] || { echo "ffmpeg checksum mismatch" >&2; exit 1; }
-  mkdir -p ffmpeg && tar xf ffmpeg.tar.xz -C ffmpeg --strip-components=1 && rm ffmpeg.tar.xz ffmpeg.tar.xz.md5
-fi
+  mkdir -p "ffmpeg/$1" && tar xf ffmpeg.tar.xz -C "ffmpeg/$1" --strip-components=1 && rm ffmpeg.tar.xz ffmpeg.tar.xz.md5
+}
+fetch_ffmpeg arm64-v8a arm64
+fetch_ffmpeg armeabi-v7a armhf
 echo "third_party ready"
