@@ -127,7 +127,7 @@ main.wrap{padding-block:16px 48px}
 .sortsel{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--fg);font:inherit;font-size:13px}
 .form{display:grid;gap:16px;max-width:520px}
 .fl{display:grid;gap:6px;font-size:13px;font-weight:600}
-.fl input[type="text"],.fl select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--fg);font:inherit;font-size:15px;font-weight:500;width:100%}
+.fl input[type="text"],.fl input[type="number"],.fl select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--fg);font:inherit;font-size:15px;font-weight:500;width:100%}
 .fl input:focus-visible,.fl select:focus-visible,.sortsel:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .drop{border:1.5px dashed var(--line);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer;background:var(--surface)}
 .drop:hover,.drop:focus-within{border-color:var(--accent)}
@@ -164,6 +164,24 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:13px;font-weight:600;width:max-content;max-width:calc(100% - 32px);text-align:center}
 .phone .vimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
 .vb.danger{color:var(--heart)}
+.buy{display:flex;flex-direction:column;gap:12px}
+.buy p{margin:0;font-size:13px;color:var(--muted)}
+.buy p.center{text-align:center;color:var(--fg)}
+.buy .form{max-width:none}
+.amount{font-family:var(--display);font-size:34px;font-weight:700;letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums}
+.qr{background:#fff;padding:10px;border-radius:12px;width:max-content;max-width:100%;margin:0 auto}
+.qr img,.qr canvas{display:block;width:180px;height:180px}
+.pay-line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
+.pay-line .btn{text-decoration:none}
+.plist{display:grid;gap:10px}
+.prow{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.prow img{width:40px;aspect-ratio:9/19.5;object-fit:cover;border-radius:6px;flex:none}
+.prow .grow{flex:1;min-width:0}
+.prow .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .m{font-size:11.5px;color:var(--muted);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status.rejected{color:var(--heart)}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end;margin-bottom:12px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .steps{margin:0;padding-left:20px;font-size:13px;color:var(--fg);display:grid;gap:4px;align-self:stretch}
 .vb{min-width:50px}
 @media (prefers-reduced-motion:reduce){.card,.chip{transition:none}.pill::before{animation:none}}
@@ -184,9 +202,10 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
     <div class="tabs" id="tabs" role="tablist" aria-label="Sections">
       <button class="tab" type="button" role="tab" data-view="gallery" aria-selected="true">Originals</button>
       <button class="tab" type="button" role="tab" data-view="community" aria-selected="false">Community</button>
-      <button class="tab" type="button" role="tab" data-view="upload" aria-selected="false">Upload &amp; earn</button>
-      <button class="tab" type="button" role="tab" data-view="earn" aria-selected="false">My earnings</button>
-      <button class="tab" type="button" role="tab" data-view="admin" aria-selected="false" hidden>Payouts</button>
+      <button class="tab" type="button" role="tab" data-view="upload" aria-selected="false">Upload &amp; sell</button>
+      <button class="tab" type="button" role="tab" data-view="purchases" aria-selected="false">Purchases</button>
+      <button class="tab" type="button" role="tab" data-view="earn" aria-selected="false">Earnings</button>
+      <button class="tab" type="button" role="tab" data-view="admin" aria-selected="false" hidden>Sales</button>
     </div>
     <nav class="chips" id="chips" aria-label="Categories"></nav>
   </div>
@@ -201,15 +220,15 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
 
   <section id="view-community" hidden>
     <div class="section-h">
-      <div><h2 class="h">Community wallpapers</h2><p class="sub">Uploaded by creators. Every download pays the creator.</p></div>
-      <select class="sortsel" id="comSort" aria-label="Sort community wallpapers"><option value="new">Newest</option><option value="top">Most downloaded</option></select>
+      <div><h2 class="h">Community wallpapers</h2><p class="sub">Made by creators. Free ones download right away; paid ones unlock after payment.</p></div>
+      <select class="sortsel" id="comSort" aria-label="Sort community wallpapers"><option value="new">Newest</option><option value="top">Most downloaded</option><option value="free">Lowest price</option></select>
     </div>
     <div class="grid" id="comGrid"></div>
     <p class="empty" id="comEmpty">No uploads yet. Upload the first wallpaper and earn ₹1 for every download.</p>
   </section>
 
   <section id="view-upload" hidden>
-    <div class="section-h"><div><h2 class="h">Upload a wallpaper, earn per download</h2><p class="sub" id="rateLine"></p></div></div>
+    <div class="section-h"><div><h2 class="h">Sell your wallpapers</h2><p class="sub" id="rateLine"></p></div></div>
     <p class="note" id="upGate" hidden></p>
     <form class="form" id="upForm" novalidate>
       <label class="drop" for="upFile">
@@ -219,10 +238,17 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
       </label>
       <label class="fl" for="upTitle">Title<input type="text" id="upTitle" maxlength="40" placeholder="e.g. Monsoon Over Araku" autocomplete="off"></label>
       <label class="fl" for="upCat">Category<select id="upCat"></select></label>
+      <label class="fl" for="upPrice">Price<select id="upPrice"></select></label>
+      <p class="sub" id="upShare" style="margin-top:-8px"></p>
       <label class="check" for="upRights"><input type="checkbox" id="upRights"><span>I made this image or own the rights to share it. Copied or copyrighted images are removed and earn nothing.</span></label>
       <p class="err" id="upErr" hidden></p>
       <div><button class="btn primary" type="submit" id="upBtn">Upload wallpaper</button></div>
     </form>
+  </section>
+
+  <section id="view-purchases" hidden>
+    <div class="section-h"><div><h2 class="h">Purchases</h2><p class="sub">Wallpapers you bought. Each unlocks once the owner confirms your payment.</p></div></div>
+    <div id="purchBody"></div>
   </section>
 
   <section id="view-earn" hidden>
@@ -231,7 +257,7 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
   </section>
 
   <section id="view-admin" hidden>
-    <div class="section-h"><div><h2 class="h">Creator payouts</h2><p class="sub">Only you, the owner, see this page. Pay each request by UPI, then mark it paid.</p></div></div>
+    <div class="section-h"><div><h2 class="h">Sales &amp; payouts</h2><p class="sub">Only you, the owner, see this page. Confirm buyers’ payments, keep your commission and pay creators their share.</p></div></div>
     <div id="adminBody"></div>
   </section>
 </main>
@@ -276,6 +302,10 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
       <div class="fname" id="savedName"></div>
     </div>
   </div>
+  <div class="sheet" id="buySheet" role="dialog" aria-labelledby="buyH" hidden>
+    <div class="sheet-h"><h2 id="buyH">Buy wallpaper</h2><button class="icon-btn" id="buyClose" type="button" aria-label="Close"></button></div>
+    <div class="buy" id="buyBody"></div>
+  </div>
   <div class="sheet" id="setSheet" role="dialog" aria-labelledby="setH" hidden>
     <div class="sheet-h"><h2 id="setH">Set as wallpaper</h2><button class="icon-btn" id="setClose" type="button" aria-label="Close"></button></div>
     <p id="setNote"></p>
@@ -291,6 +321,7 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (()=>{
 const TAU=Math.PI*2;
@@ -522,6 +553,7 @@ const ICON={heart:sv(HEART),heartFill:sv(HEART,1),close:sv('<path d="M6 6l12 12M
   lock:sv('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
   save:sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
   phone:sv('<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>'),
+  cart:sv('<path d="M3 4h2l2.2 10.5a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L20.5 8H6.2"/><circle cx="9.5" cy="19.5" r="1.2"/><circle cx="17" cy="19.5" r="1.2"/>'),
   plus:sv('<path d="M12 5v14M5 12h14"/>')};
 const vbHTML=(ic,label)=>`${ic}<span>${label}</span>`;
 $('bPrev').innerHTML=vbHTML(ICON.prev,'Prev');$('bNext').innerHTML=vbHTML(ICON.next,'Next');
@@ -595,7 +627,7 @@ let sx=null;
 $('phone').addEventListener('pointerdown',e=>{sx=e.clientX});
 $('phone').addEventListener('pointerup',e=>{if(sx===null)return;const dx=e.clientX-sx;sx=null;if(Math.abs(dx)>45)step(dx<0?1:-1)});
 document.addEventListener('keydown',e=>{if(!vOpen)return;
-  if(e.key==='Escape'){if(!sheet.hidden||!$('setSheet').hidden)closeSheet();else closeViewer()}
+  if(e.key==='Escape'){if(!sheet.hidden||!$('setSheet').hidden||!$('buySheet').hidden)closeSheet();else closeViewer()}
   else if(e.key==='ArrowRight')step(1);else if(e.key==='ArrowLeft')step(-1)});
 
 function tickClock(){const d=new Date();
@@ -607,7 +639,7 @@ tickClock();setInterval(tickClock,5000);
 const SIZES=[['iPhone 16 Pro Max',1320,2868],['iPhone 16 / 15',1179,2556],['Android QHD+',1440,3200],['4K phone',2160,3840],['iPad Pro 13″',2064,2752],['4K desktop',3840,2160]];
 $('sizes').innerHTML=SIZES.map((s,i)=>`<button class="size" type="button" data-i="${i}"><b>${s[0]}</b><span>${s[1]} × ${s[2]}</span></button>`).join('');
 let savedURL=null;
-function closeSheet(){sheet.hidden=true;$('setSheet').hidden=true}
+function closeSheet(){sheet.hidden=true;$('setSheet').hidden=true;$('buySheet').hidden=true}
 $('sClose').addEventListener('click',closeSheet);
 $('bSave').addEventListener('click',()=>{const it=vList[vIdx];
   $('sheetNote').textContent=GEN[it.g].live?'Live wallpapers save the frame showing right now. Pick a screen size; it is redrawn at full resolution.':'Pick a screen size. The wallpaper is redrawn at full resolution, so it stays sharp.';
@@ -632,86 +664,105 @@ function loop(){frame++;
   requestAnimationFrame(loop)}
 let resizeT;window.addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{for(const cv of visible)paintThumb(cv,true)},150)});
 
-/* ---------- creator marketplace: uploads, unique downloads, earnings, payouts ---------- */
-const RATE_DL=1,RATE_LIKE=0.2,MIN_PAYOUT=100;
+/* ---------- creator marketplace: paid wallpapers, app commission, UPI checkout the owner confirms, creator payouts ---------- */
+const PRICES=[0,10,19,29,49,99,199];
+const DEFAULT_COMMISSION=20,MIN_PAYOUT=100;
 const COM_CATS=['Nature','Space','Abstract','Gradients','Neon','Anime','Cars','Minimal','Devotional','Other'];
 const inr=n=>'₹'+(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const rs=n=>'₹'+(+n).toLocaleString('en-IN');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const blobURL=id=>'/_blob/'+encodeURIComponent(id);
-const NO_WRITE='Browsing works, but likes, counted downloads and uploads need Contributor access. Ask the page owner to share it with you as a Contributor.';
+const NO_WRITE='Browsing works, but buying, likes and uploads need Contributor access. Ask the page owner to share it with you as a Contributor.';
 
 let db=null,userCap=null,assets=null,downloads=null,me=null,isOwner=false,comState='loading';
-let creators={},acts={},myPay=null,myLedger=null,allPay={},allLedger={};
+let creators={},acts={},cfg={};
+let myVault=null,myOrders=null,myDeliv=null,mySales=null,myPay=null,myLedger=null;
+let allVault={},allOrders={},allDeliv={},allSales={},allPay={},allLedger={};
 const names={};
 const writeQ={};
 const enqueue=(path,fn)=>{const next=(writeQ[path]||Promise.resolve()).catch(()=>{}).then(fn);writeQ[path]=next;return next};
+const fmtDate=(t,y)=>new Date(t).toLocaleDateString('en-IN',y?{day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'});
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
-function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true},3400)}
-$('rateLine').textContent=`You earn ${inr(RATE_DL)} for every person who downloads your wallpaper and ${inr(RATE_LIKE)} for every like. Request a payout to your UPI ID once you reach ${inr(MIN_PAYOUT)}.`;
-$('earnRate').textContent=`${inr(RATE_DL)} per unique download · ${inr(RATE_LIKE)} per like · payouts from ${inr(MIN_PAYOUT)}`;
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true},3600)}
 $('upCat').innerHTML=COM_CATS.map(c=>`<option>${c}</option>`).join('');
+$('upPrice').innerHTML=PRICES.map(p=>`<option value="${p}">${p?rs(p):'Free'}</option>`).join('');
 $('cPrev').innerHTML=vbHTML(ICON.prev,'Prev');$('cNext').innerHTML=vbHTML(ICON.next,'Next');
-$('cLock').innerHTML=vbHTML(ICON.lock,'Clock');$('cGet').innerHTML=vbHTML(ICON.save,'Download');
+$('cLock').innerHTML=vbHTML(ICON.lock,'Clock');$('buyClose').innerHTML=ICON.close;
 $('cPrev').addEventListener('click',()=>step(-1));$('cNext').addEventListener('click',()=>step(1));
+
+/* money rules */
+const commissionPct=()=>{const c=Number(cfg.commission);return Number.isFinite(c)&&c>=0&&c<=90?c:DEFAULT_COMMISSION};
+const creatorNet=(price,pct)=>Math.round(price*(100-pct))/100;
+const salesOpen=()=>!!cfg.upi;
 
 /* views */
 let view='gallery';
+const VIEWS=['gallery','community','upload','purchases','earn','admin'];
 function showView(v){view=v;for(const b of document.querySelectorAll('.tab'))b.setAttribute('aria-selected',b.dataset.view===v);
-  for(const k of ['gallery','community','upload','earn','admin'])$('view-'+k).hidden=k!==v;
+  for(const k of VIEWS)$('view-'+k).hidden=k!==v;
   $('chips').hidden=v!=='gallery';
-  renderCommunity();renderEarn();renderAdmin();renderUploadGate();
+  rerenderCom();
   try{localStorage.setItem('glowwall-view',v)}catch(e){}}
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)showView(b.dataset.view)});
 
 /* people */
-async function loadNames(ids){if(!userCap||!ids.length)return;
+async function loadNames(ids){ids=ids.filter(Boolean);if(!userCap||!ids.length)return;
   try{const ps=await userCap.profiles(ids);for(const id of ids)names[id]=(ps[id]&&ps[id].name)||''}catch(e){}}
 const nameFor=id=>id===me?'You':(names[id]||'A creator');
+const fillNames=root=>{const els=[...root.querySelectorAll('[data-uid]')];loadNames([...new Set(els.map(e=>e.dataset.uid))]).then(()=>{for(const el of els)el.textContent=nameFor(el.dataset.uid)})};
 
-/* counting: each viewer counts once per wallpaper; creators' own actions never count */
+/* catalogue */
 const keyOf=(uid,wid)=>uid+'~'+wid;
 const ownerOfKey=k=>k.slice(0,k.lastIndexOf('~'));
 function counts(){const s={};
   const bump=(k,f,uid)=>{if(ownerOfKey(k)===uid)return;(s[k]||(s[k]={dl:0,like:0}))[f]++};
   for(const[uid,a]of Object.entries(acts)){for(const k in (a.dl||{}))bump(k,'dl',uid);for(const k in (a.like||{}))if(a.like[k])bump(k,'like',uid)}
   return s}
-const earnOf=st=>st?st.dl*RATE_DL+st.like*RATE_LIKE:0;
 function comItems(){const out=[];
-  for(const[uid,c]of Object.entries(creators))for(const w of (c.walls||[]))if(w&&w.asset)out.push({uid,w,key:keyOf(uid,w.id)});
+  for(const[uid,c]of Object.entries(creators))for(const w of (c.walls||[]))if(w&&(w.asset||w.preview))out.push({uid,w,key:keyOf(uid,w.id)});
   return out}
-function balance(uid,payDoc,ledgerDoc,st){let earned=0;
-  for(const k in st)if(ownerOfKey(k)===uid)earned+=earnOf(st[k]);
-  const paidList=(ledgerDoc&&ledgerDoc.paid)||[],paidIds=new Set(paidList.map(p=>p.id));
-  const paid=paidList.reduce((a,p)=>a+(+p.amount||0),0);
-  const reqs=(payDoc&&payDoc.requests)||[];
-  const pending=reqs.filter(r=>!paidIds.has(r.id)).reduce((a,r)=>a+(+r.amount||0),0);
-  return{earned,paid,pending,available:Math.max(0,Math.floor((earned-paid-pending)*100)/100),reqs,paidIds}}
-const fmtDate=(t,y)=>new Date(t).toLocaleDateString('en-IN',y?{day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'});
+const priceOf=it=>+it.w.price||0;
+const previewURL=it=>blobURL(it.w.preview||it.w.asset);
+function fullURL(it){if(!priceOf(it))return it.w.asset?blobURL(it.w.asset):null;
+  const d=myDeliv&&myDeliv.items&&myDeliv.items[it.key];if(d&&d.asset)return blobURL(d.asset);
+  const v=it.uid===me?myVault:isOwner?allVault[it.uid]:null;const a=v&&v.walls&&v.walls[it.w.id];return a?blobURL(a):null}
+const comFullURL=fullURL;
+function myOrderFor(key){const list=((myOrders&&myOrders.list)||[]).filter(o=>o.key===key);return list[list.length-1]||null}
+function orderState(o,deliv){if(!o)return null;const d=deliv||{};
+  if(d.items&&d.items[o.key]&&d.items[o.key].orderId===o.id)return'paid';if(d.rejected&&d.rejected[o.id])return'rejected';return'pending'}
 
 /* community grid */
 let comList=[];
 function renderCommunity(){if(view!=='community')return;
   const st=counts(),L=comItems();
-  if($('comSort').value==='top')L.sort((a,b)=>((st[b.key]||{}).dl||0)-((st[a.key]||{}).dl||0)||b.w.at-a.w.at);else L.sort((a,b)=>b.w.at-a.w.at);
+  if($('comSort').value==='top')L.sort((a,b)=>((st[b.key]||{}).dl||0)-((st[a.key]||{}).dl||0)||b.w.at-a.w.at);
+  else if($('comSort').value==='free')L.sort((a,b)=>priceOf(a)-priceOf(b)||b.w.at-a.w.at);
+  else L.sort((a,b)=>b.w.at-a.w.at);
   comList=L;const g=$('comGrid');g.innerHTML='';
   const empty=$('comEmpty');
-  empty.textContent=comState==='offline'?'Community uploads load when this page is opened in Claude while signed in.':comState==='loading'?'Loading community wallpapers…':`No uploads yet. Upload the first wallpaper and earn ${inr(RATE_DL)} for every download.`;
+  empty.textContent=comState==='offline'?'Community wallpapers load when this page is opened in Claude while signed in.':comState==='loading'?'Loading community wallpapers…':'No wallpapers yet. Upload the first one and set your price.';
   empty.hidden=L.length>0;
-  L.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='card';b.setAttribute('aria-label',`${it.w.title} by ${nameFor(it.uid)}`);
-    const n=(st[it.key]||{}).dl||0;
-    b.innerHTML=`<img loading="lazy" alt="" src="${blobURL(it.w.asset)}"><span class="pill plain">${n} ↓</span><span class="card-meta"><span class="card-stack"><span class="card-name">${esc(it.w.title)}</span><span class="card-by" data-uid="${esc(it.uid)}">${esc(nameFor(it.uid))}</span></span></span>`;
+  L.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='card';
+    const p=priceOf(it),own=p&&fullURL(it);
+    b.setAttribute('aria-label',`${it.w.title} by ${nameFor(it.uid)}, ${p?rs(p):'free'}`);
+    b.innerHTML=`<img loading="lazy" alt="" src="${previewURL(it)}"><span class="pill plain">${p?(own?'Owned':rs(p)):'Free'}</span><span class="card-meta"><span class="card-stack"><span class="card-name">${esc(it.w.title)}</span><span class="card-by" data-uid="${esc(it.uid)}">${esc(nameFor(it.uid))}</span></span></span>`;
     b.querySelector('img').addEventListener('error',e=>{e.target.style.visibility='hidden'});
     b.addEventListener('click',()=>openViewer(i,comList,'com'));g.appendChild(b)});
-  loadNames([...new Set(L.map(i=>i.uid))]).then(()=>{for(const el of g.querySelectorAll('.card-by'))el.textContent=nameFor(el.dataset.uid)})}
+  fillNames(g)}
 $('comSort').addEventListener('change',renderCommunity);
 
 /* community viewer */
-function comMeta(it){const st=counts()[it.key]||{dl:0,like:0};return`BY ${nameFor(it.uid).toUpperCase()} · ${st.dl} DOWNLOADS · ${st.like} LIKES`}
+function comMeta(it){const st=counts()[it.key]||{dl:0,like:0},p=priceOf(it);
+  return`BY ${nameFor(it.uid).toUpperCase()} · ${p?rs(p):'FREE'} · ${st.dl} DOWNLOADS · ${st.like} LIKES`}
 function updateCom(){const it=vList[vIdx];if(!it)return;
-  const img=$('vImg'),src=blobURL(it.w.asset);if(img.getAttribute('src')!==src)img.src=src;img.alt=it.w.title;
+  const full=fullURL(it),img=$('vImg'),src=full||previewURL(it);if(img.getAttribute('src')!==src)img.src=src;img.alt=it.w.title;
   $('vName').textContent=it.w.title;$('vMeta').textContent=comMeta(it);
   const liked=!!(acts[me]&&acts[me].like&&acts[me].like[it.key]);
   $('cLike').setAttribute('aria-pressed',liked);$('cLike').innerHTML=vbHTML(liked?ICON.heartFill:ICON.heart,liked?'Liked':'Like');
+  const p=priceOf(it),o=myOrderFor(it.key),os=orderState(o,myDeliv);
+  $('cGet').innerHTML=full?vbHTML(ICON.save,'Download'):vbHTML(ICON.cart,os==='pending'?'Checking':`Buy ${rs(p)}`);
+  $('cSet').hidden=!full;
   $('cRemove').hidden=!(isOwner||it.uid===me);armRemove(false);
   loadNames([it.uid]).then(()=>{if(vList[vIdx]===it)$('vMeta').textContent=comMeta(it)})}
 
@@ -726,17 +777,17 @@ $('cLike').addEventListener('click',async()=>{const it=vList[vIdx];if(!me){toast
   const p=writeActs(a);updateCom();try{await p}catch(e){toast(NO_WRITE)}updateCom()});
 
 const slug=t=>(t||'wallpaper').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'wallpaper';
-function showComSave(it){$('sizes').hidden=true;$('sheetNote').textContent='';$('savedImg').src=blobURL(it.w.asset);
+function showComSave(it,url){$('sizes').hidden=true;$('sheetNote').textContent='';$('savedImg').src=url;
   $('savedName').textContent=`${it.w.title} · ${it.w.w} × ${it.w.h}`;$('result').hidden=false;sheet.hidden=false;countDownload(it)}
-$('cGet').addEventListener('click',async()=>{const it=vList[vIdx],btn=$('cGet');
-  if(!downloads){showComSave(it);return}
-  const first=!myActs().dl[it.key];btn.setAttribute('aria-busy','true');
-  try{const r=await fetch(blobURL(it.w.asset));if(!r.ok)throw new Error('fetch');const b=await r.blob();
+$('cGet').addEventListener('click',async()=>{const it=vList[vIdx],btn=$('cGet'),url=fullURL(it);
+  if(!url){openBuy();return}
+  if(!downloads){showComSave(it,url);return}
+  btn.setAttribute('aria-busy','true');
+  try{const r=await fetch(url);if(!r.ok)throw new Error('fetch');const b=await r.blob();
     const ext=((b.type||'image/png').split('/')[1]||'png').replace('jpeg','jpg');
     const res=await downloads.save({filename:`${slug(it.w.title)}.${ext}`,data:b});
-    if(res==='saved'||res==='delivered'){await countDownload(it);
-      toast(it.uid===me?'Saved. Your own downloads don’t count toward earnings.':first&&me?`Saved. The creator just earned ${inr(RATE_DL)}.`:'Saved.')}}
-  catch(e){if(!(e&&e.code==='declined'))showComSave(it)}
+    if(res==='saved'||res==='delivered'){await countDownload(it);toast('Saved.')}}
+  catch(e){if(!(e&&e.code==='declined'))showComSave(it,url)}
   finally{btn.removeAttribute('aria-busy')}});
 
 let removeArmed=false,removeT;
@@ -745,18 +796,59 @@ $('cRemove').addEventListener('click',async()=>{if(!removeArmed){armRemove(true)
   const it=vList[vIdx],c=creators[it.uid];if(!c||!db)return;
   const walls=(c.walls||[]).filter(w=>w.id!==it.w.id);
   try{await enqueue('creators/'+it.uid,()=>db.doc('creators/'+it.uid).set({...c,walls,updatedAt:Date.now()}));
-    if(assets)assets.delete(it.w.asset).catch(()=>{});
-    toast('Wallpaper removed.');vList.splice(vIdx,1);
+    if(assets){if(it.w.preview)assets.delete(it.w.preview).catch(()=>{});if(it.w.asset)assets.delete(it.w.asset).catch(()=>{})}
+    toast('Wallpaper removed. People who bought it can still download it.');vList.splice(vIdx,1);
     if(!vList.length)closeViewer();else{vIdx=Math.min(vIdx,vList.length-1);updateViewer()}}
   catch(e){toast('Couldn’t remove it. Only its creator or the page owner can.')}});
+
+/* checkout: buyer pays the owner's UPI ID, enters the UTR, the owner confirms and the full file unlocks */
+function upiLink(it,orderRef){const q=new URLSearchParams({pa:cfg.upi,pn:cfg.payee||'Glowwall',am:priceOf(it).toFixed(2),cu:'INR',tn:`Glowwall ${orderRef}`});return'upi://pay?'+q.toString()}
+let buyRef='';
+function openBuy(){const it=vList[vIdx];closeSheet();buyRef=newId().toUpperCase().slice(-6);renderBuy(it);$('buySheet').hidden=false}
+function renderBuy(it){const body=$('buyBody'),p=priceOf(it),o=myOrderFor(it.key),os=orderState(o,myDeliv);
+  $('buyH').textContent=`Buy “${it.w.title}”`;
+  if(!salesOpen()){body.innerHTML='<p>Paid wallpapers open for sale once the app owner adds a UPI ID in Sales.</p>';return}
+  if(!me||comState!=='ready'){body.innerHTML=`<p>${NO_WRITE}</p>`;return}
+  if(os==='pending'){body.innerHTML=`<p>Your payment of ${inr(o.price)} is being checked (UTR <span class="upi">${esc(o.utr)}</span>). The full wallpaper unlocks here as soon as the owner confirms it.</p>`;return}
+  const pct=commissionPct();
+  body.innerHTML=`${os==='rejected'?`<p class="err">Your last payment (UTR ${esc(o.utr)}) couldn’t be matched. Check the reference number and try again.</p>`:''}
+    <div class="amount">${inr(p)}</div>
+    <p class="center">1. Pay this amount to <b>${esc(cfg.payee||'the app owner')}</b> with any UPI app.</p>
+    <div class="qr" id="buyQR" aria-label="UPI payment QR code"></div>
+    <div class="pay-line"><span class="upi">${esc(cfg.upi)}</span><button class="btn sm" type="button" id="buyCopy">Copy UPI ID</button><a class="btn sm" href="${esc(upiLink(it,buyRef))}">Open UPI app</a></div>
+    <form class="form" id="buyForm" novalidate>
+      <label class="fl" for="buyUtr">2. Enter the 12-digit UPI reference (UTR) from your payment app<input type="text" id="buyUtr" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="e.g. 431298765012"></label>
+      <p class="err" id="buyErr" hidden></p>
+      <button class="btn primary" type="submit">I’ve paid ${inr(p)}</button>
+    </form>
+    <p>The owner checks the payment, then the full-resolution file unlocks here. ${esc(nameFor(it.uid))} gets ${inr(creatorNet(p,pct))}; the app keeps ${pct}%.</p>`;
+  try{if(window.QRCode)new QRCode($('buyQR'),{text:upiLink(it,buyRef),width:180,height:180,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});else $('buyQR').hidden=true}catch(e){$('buyQR').hidden=true}}
+$('buyClose').addEventListener('click',closeSheet);
+$('buyBody').addEventListener('click',async e=>{if(e.target.id!=='buyCopy')return;
+  try{await navigator.clipboard.writeText(cfg.upi);toast('UPI ID copied.')}
+  catch(err){const s=getSelection(),r=document.createRange();r.selectNodeContents($('buyBody').querySelector('.upi'));s.removeAllRanges();s.addRange(r);toast('UPI ID selected. Copy it from the selection.')}});
+$('buyBody').addEventListener('submit',async e=>{if(e.target.id!=='buyForm')return;e.preventDefault();const it=vList[vIdx];
+  const utr=$('buyUtr').value.replace(/\s+/g,''),berr=m=>{$('buyErr').textContent=m;$('buyErr').hidden=false};
+  if(!/^\d{12}$/.test(utr))return berr('The UTR is the 12-digit number in your UPI app’s payment details.');
+  const used=Object.values(allOrders).concat(myOrders?[myOrders]:[]).some(d=>(d.list||[]).some(o=>o.utr===utr));
+  if(used)return berr('That UTR was already used for another order.');
+  const order={id:newId(),ref:buyRef,key:it.key,creator:it.uid,wall:it.w.id,title:it.w.title,price:priceOf(it),utr,at:Date.now()};
+  try{await enqueue('orders/'+me,()=>db.doc('orders/'+me).set({list:[...((myOrders&&myOrders.list)||[]),order]}));
+    myOrders={list:[...((myOrders&&myOrders.list)||[]),order]};
+    toast('Thanks! The owner will confirm your payment and unlock the wallpaper.');closeSheet();updateCom()}
+  catch(err){berr('Your order didn’t go through. Try again.')}});
 
 /* upload */
 const UP_HINT='PNG, JPG or WebP, up to 20 MB. The short side must be at least 1080 px.';
 let upFile=null,upDims=null;
-function renderUploadGate(){const g=$('upGate');let msg='';
+function renderUploadGate(){const g=$('upGate');let msg='';const pct=commissionPct();
+  $('rateLine').textContent=`Free wallpapers help people find you. Paid ones sell through the app: you keep ${100-pct}% of every sale and the app keeps ${pct}%. Request a payout to your UPI ID once you reach ${inr(MIN_PAYOUT)}.`;
+  const p=+$('upPrice').value||0;
+  $('upShare').textContent=p?`Buyers pay ${rs(p)}. You get ${inr(creatorNet(p,pct))} per sale after the ${pct}% app commission.${salesOpen()?'':' Sales open once the owner adds a UPI ID.'} Buyers see a watermarked preview until they pay.`:'Anyone can download it for free.';
   if(comState==='offline')msg='Uploading works when this page is opened in Claude while signed in.';
   else if(comState==='ready'&&(!assets||!me))msg='<b>Uploading needs Contributor access.</b> Ask the owner of this page to share it with you as a Contributor, then reload.';
   g.innerHTML=msg;g.hidden=!msg;$('upBtn').disabled=!!msg||comState!=='ready'}
+$('upPrice').addEventListener('change',renderUploadGate);
 function resetUploadFile(){upFile=null;upDims=null;const pv=$('upPrev');if(pv.src.startsWith('blob:'))URL.revokeObjectURL(pv.src);pv.removeAttribute('src');pv.hidden=true;
   $('upFileT').textContent='Choose an image';$('upFileS').textContent=UP_HINT}
 $('upFile').addEventListener('change',async()=>{const f=$('upFile').files[0];resetUploadFile();$('upErr').hidden=true;if(!f)return;
@@ -770,75 +862,144 @@ $('upFile').addEventListener('change',async()=>{const f=$('upFile').files[0];res
   upFile=f;upDims=[w,h];const pv=$('upPrev');pv.src=url;pv.hidden=false;
   $('upFileT').textContent=f.name;$('upFileS').textContent=`${w} × ${h} · ${(f.size/1048576).toFixed(1)} MB`;
   if(!$('upTitle').value.trim())$('upTitle').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,40)});
+async function makePreview(file,w,h){const src=URL.createObjectURL(file),img=new Image();
+  await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=src});
+  const s=Math.min(1,900/Math.max(w,h)),W=Math.round(w*s),H=Math.round(h*s),c=document.createElement('canvas');c.width=W;c.height=H;
+  const x=c.getContext('2d');x.drawImage(img,0,0,W,H);URL.revokeObjectURL(src);
+  x.save();x.translate(W/2,H/2);x.rotate(-Math.PI/6);x.font=`700 ${Math.round(W*.075)}px system-ui,sans-serif`;x.textAlign='center';
+  x.fillStyle='rgba(255,255,255,.32)';x.strokeStyle='rgba(0,0,0,.22)';x.lineWidth=Math.max(1,W*.003);
+  for(let i=-8;i<=8;i++){const y=i*W*.2;x.strokeText('GLOWWALL PREVIEW',0,y);x.fillText('GLOWWALL PREVIEW',0,y)}
+  x.restore();
+  return new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('preview')),'image/jpeg',.82))}
 $('upForm').addEventListener('submit',async e=>{e.preventDefault();const err=m=>{$('upErr').textContent=m;$('upErr').hidden=false};$('upErr').hidden=true;
   if(!assets||!db||!me)return err('Uploading needs Contributor access to this page.');
   if(!upFile)return err('Choose an image first.');
   const title=$('upTitle').value.trim();if(!title)return err('Give your wallpaper a title.');
   if(!$('upRights').checked)return err('Confirm that you own the rights to this image.');
-  const btn=$('upBtn');btn.disabled=true;btn.textContent='Uploading…';
-  try{const res=await assets.upload(upFile);
-    const wall={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),asset:res.id,title,cat:$('upCat').value,w:upDims[0],h:upDims[1],at:Date.now()};
+  const price=+$('upPrice').value||0,btn=$('upBtn');btn.disabled=true;btn.textContent='Uploading…';
+  try{const full=await assets.upload(upFile);
+    const wall={id:newId(),title,cat:$('upCat').value,w:upDims[0],h:upDims[1],at:Date.now(),price};
+    if(price){const prev=await assets.upload(await makePreview(upFile,upDims[0],upDims[1]),{contentType:'image/jpeg'});wall.preview=prev.id;
+      // The full file's id stays in the creator's vault, readable only by them and the owner, until someone buys it.
+      await enqueue('vault/'+me,()=>{const v=myVault||{};return db.doc('vault/'+me).set({walls:{...(v.walls||{}),[wall.id]:full.id}})})}
+    else wall.asset=full.id;
     await enqueue('creators/'+me,()=>{const c=creators[me]||{};return db.doc('creators/'+me).set({...c,walls:[wall,...(c.walls||[])],updatedAt:Date.now()})});
-    $('upForm').reset();resetUploadFile();toast('Uploaded. It’s live in Community now.');showView('community')}
+    $('upForm').reset();resetUploadFile();toast(price?`Uploaded for ${rs(price)}. It’s on sale in Community now.`:'Uploaded. It’s live in Community now.');showView('community')}
   catch(e){const m={too_large:'That image is too large. Keep it under 20 MB.',unsupported_type:'That file type isn’t supported. Use PNG, JPG or WebP.',
       quota_or_state:'Storage for this app is full right now. Ask the owner to free up space.',rate_limited:'Too many uploads in a row. Wait a minute and try again.'}[e&&e.code];
     err(m||'The upload didn’t go through. Check your connection and try again.')}
   finally{btn.textContent='Upload wallpaper';renderUploadGate()}});
 
-/* earnings */
-function renderEarn(){if(view!=='earn')return;const body=$('earnBody');
+/* purchases */
+function renderPurchases(){if(view!=='purchases')return;const body=$('purchBody');
+  if(comState!=='ready'||!me){body.innerHTML=`<p class="note">${comState==='loading'?'Loading your purchases…':comState==='offline'?'Purchases load when this page is opened in Claude while signed in.':'Sign in to Claude to see your purchases.'}</p>`;return}
+  const list=[...((myOrders&&myOrders.list)||[])].reverse(),items=comItems();
+  if(!list.length){body.innerHTML='<p class="empty">You haven’t bought any wallpapers yet. Paid wallpapers in Community show a price tag.</p>';return}
+  body.innerHTML=`<div class="plist">${list.map(o=>{const s=orderState(o,myDeliv),it=items.find(i=>i.key===o.key);
+    return`<div class="prow">${it?`<img alt="" src="${fullURL(it)||previewURL(it)}">`:''}<div class="grow"><div class="t">${esc(o.title)}</div><div class="m">${inr(o.price)} · UTR ${esc(o.utr)} · ${fmtDate(o.at,1)}</div></div>
+      <span class="status ${s}">${s==='paid'?'Unlocked':s==='rejected'?'Not matched':'Checking'}</span>${s==='paid'&&it?`<button class="btn sm primary" type="button" data-open="${esc(o.key)}">Open</button>`:''}</div>`}).join('')}</div>`}
+$('purchBody').addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(!b)return;const L=comItems(),i=L.findIndex(x=>x.key===b.dataset.open);if(i>=0)openViewer(i,L,'com')});
+
+/* creator earnings */
+function balance(salesDoc,payDoc,ledgerDoc){const sales=(salesDoc&&salesDoc.list)||[];
+  const earned=sales.reduce((a,s)=>a+(+s.net||0),0);
+  const paidList=(ledgerDoc&&ledgerDoc.paid)||[],paidIds=new Set(paidList.map(p=>p.id));
+  const paid=paidList.reduce((a,p)=>a+(+p.amount||0),0);
+  const reqs=(payDoc&&payDoc.requests)||[];
+  const pending=reqs.filter(r=>!paidIds.has(r.id)).reduce((a,r)=>a+(+r.amount||0),0);
+  return{sales,earned,paid,pending,available:Math.max(0,Math.floor((earned-paid-pending)*100)/100),reqs,paidIds}}
+function renderEarn(){if(view!=='earn')return;const body=$('earnBody');const pct=commissionPct();
+  $('earnRate').textContent=`You keep ${100-pct}% of every sale · payouts from ${inr(MIN_PAYOUT)}`;
   if(comState!=='ready'||!me){body.innerHTML=`<p class="note">${comState==='loading'?'Loading your earnings…':comState==='offline'?'Earnings load when this page is opened in Claude while signed in.':'Sign in to Claude to see your earnings.'}</p>`;return}
   const old=$('payUpi'),typed=old?old.value:null,focused=document.activeElement===old;
-  const st=counts(),b=balance(me,myPay,myLedger,st),walls=(creators[me]&&creators[me].walls)||[],can=b.available>=MIN_PAYOUT;
-  const rows=walls.map(w=>{const s=st[keyOf(me,w.id)]||{dl:0,like:0};return`<tr><td>${esc(w.title)}</td><td class="n">${s.dl}</td><td class="n">${s.like}</td><td class="n">${inr(earnOf(s))}</td></tr>`}).join('');
+  const b=balance(mySales,myPay,myLedger),walls=(creators[me]&&creators[me].walls)||[],can=b.available>=MIN_PAYOUT;
+  const by={};for(const s of b.sales){(by[s.key]||(by[s.key]={n:0,net:0})).n++;by[s.key].net+=+s.net||0}
+  const rows=walls.map(w=>{const s=by[keyOf(me,w.id)]||{n:0,net:0};return`<tr><td>${esc(w.title)}</td><td class="n">${w.price?rs(w.price):'Free'}</td><td class="n">${s.n}</td><td class="n">${inr(s.net)}</td></tr>`}).join('');
   const reqRows=[...b.reqs].reverse().map(r=>`<tr><td>${fmtDate(r.at,1)}</td><td class="upi">${esc(r.upi)}</td><td class="n">${inr(r.amount)}</td><td>${b.paidIds.has(r.id)?'<span class="status paid">Paid</span>':'<span class="status pending">Pending</span>'}</td></tr>`).join('');
-  body.innerHTML=`<p class="note"><b>How you get paid:</b> each person who downloads your wallpaper earns you ${inr(RATE_DL)} once, and each like earns ${inr(RATE_LIKE)}. Your own downloads and likes don’t count. When your balance reaches ${inr(MIN_PAYOUT)}, request a payout and the app owner sends it to your UPI ID.</p>
+  body.innerHTML=`<p class="note"><b>How you get paid:</b> buyers pay the app through UPI. Once the owner confirms a payment, your share (${100-pct}% of the price) is added here. When your balance reaches ${inr(MIN_PAYOUT)}, request a payout and the owner sends it to your UPI ID.</p>
   <div class="tiles"><div class="tile hl"><span>Available</span><b>${inr(b.available)}</b></div><div class="tile"><span>Total earned</span><b>${inr(b.earned)}</b></div><div class="tile"><span>Pending payout</span><b>${inr(b.pending)}</b></div><div class="tile"><span>Paid to you</span><b>${inr(b.paid)}</b></div></div>
   <h3 class="h3">Request a payout</h3>
-  <form class="payrow" id="payForm" novalidate><label class="fl" for="payUpi">UPI ID<input type="text" id="payUpi" placeholder="name@okaxis" autocomplete="off" value="${esc((myPay&&myPay.upi)||'')}"></label>
+  <form class="payrow" id="payForm" novalidate><label class="fl" for="payUpi">Your UPI ID<input type="text" id="payUpi" placeholder="name@okaxis" autocomplete="off" value="${esc((myPay&&myPay.upi)||'')}"></label>
   <button class="btn primary" type="submit"${can?'':' disabled'}>Request ${inr(b.available)}</button></form>
   <p class="err" id="payErr" hidden></p>
   ${can?'':`<p class="sub" style="margin:-10px 0 22px">You can request a payout once your available balance reaches ${inr(MIN_PAYOUT)}. ${inr(Math.max(0,MIN_PAYOUT-b.available))} to go.</p>`}
   <h3 class="h3">Your wallpapers</h3>
-  <div class="tbl-wrap"><table><thead><tr><th>Wallpaper</th><th class="n">Downloads</th><th class="n">Likes</th><th class="n">Earned</th></tr></thead><tbody>${rows||'<tr><td class="empty-row" colspan="4">You haven’t uploaded anything yet. Open Upload &amp; earn to add your first wallpaper.</td></tr>'}</tbody></table></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Wallpaper</th><th class="n">Price</th><th class="n">Sales</th><th class="n">Your share</th></tr></thead><tbody>${rows||'<tr><td class="empty-row" colspan="4">You haven’t uploaded anything yet. Open Upload &amp; sell to add your first wallpaper.</td></tr>'}</tbody></table></div>
   <h3 class="h3">Payout history</h3>
   <div class="tbl-wrap"><table><thead><tr><th>Requested</th><th>UPI ID</th><th class="n">Amount</th><th>Status</th></tr></thead><tbody>${reqRows||'<tr><td class="empty-row" colspan="4">No payout requests yet.</td></tr>'}</tbody></table></div>`;
   if(typed!==null){const n=$('payUpi');n.value=typed;if(focused){n.focus();n.setSelectionRange(typed.length,typed.length)}}}
+const UPI_RE=/^[\w.\-]{2,256}@[a-zA-Z][a-zA-Z0-9.]{1,63}$/;
 $('earnBody').addEventListener('submit',async e=>{if(e.target.id!=='payForm')return;e.preventDefault();
   const upi=$('payUpi').value.trim(),perr=m=>{$('payErr').textContent=m;$('payErr').hidden=false};
-  if(!/^[\w.\-]{2,256}@[a-zA-Z][a-zA-Z0-9.]{1,63}$/.test(upi))return perr('Enter a valid UPI ID, like name@okaxis.');
-  const b=balance(me,myPay,myLedger,counts());if(b.available<MIN_PAYOUT)return perr(`You need at least ${inr(MIN_PAYOUT)} available.`);
-  const req={id:Date.now().toString(36),amount:b.available,at:Date.now(),upi};
+  if(!UPI_RE.test(upi))return perr('Enter a valid UPI ID, like name@okaxis.');
+  const b=balance(mySales,myPay,myLedger);if(b.available<MIN_PAYOUT)return perr(`You need at least ${inr(MIN_PAYOUT)} available.`);
+  const req={id:newId(),amount:b.available,at:Date.now(),upi};
   try{await enqueue('payouts/'+me,()=>db.doc('payouts/'+me).set({upi,requests:[...((myPay&&myPay.requests)||[]),req]}));toast(`Payout of ${inr(req.amount)} requested.`)}
   catch(err){perr('The request didn’t go through. You may need Contributor access to this page.')}});
 
-/* owner: payouts */
-let adminRows=[];
-function renderAdmin(){if(view!=='admin'||!isOwner)return;
-  const st=counts(),body=$('adminBody'),rows=[];let pendingSum=0,paidSum=0,dl=0;
-  for(const[uid,p]of Object.entries(allPay)){const b=balance(uid,p,allLedger[uid],st);
-    for(const r of (p.requests||[]))if(!b.paidIds.has(r.id)){pendingSum+=+r.amount||0;rows.push({uid,r,b})}}
-  for(const L of Object.values(allLedger))for(const x of (L.paid||[]))paidSum+=+x.amount||0;
-  for(const k in st)dl+=st[k].dl;
-  rows.sort((a,b)=>a.r.at-b.r.at);adminRows=rows;
-  const nCreators=Object.values(creators).filter(c=>(c.walls||[]).length).length;
-  body.innerHTML=`<div class="tiles"><div class="tile hl"><span>To pay now</span><b>${inr(pendingSum)}</b></div><div class="tile"><span>Paid so far</span><b>${inr(paidSum)}</b></div><div class="tile"><span>Creators</span><b>${nCreators}</b></div><div class="tile"><span>Uploads · downloads</span><b>${comItems().length} · ${dl}</b></div></div>
-  <h3 class="h3">Pending requests</h3>
-  <div class="tbl-wrap"><table><thead><tr><th>Creator</th><th>UPI ID</th><th class="n">Amount</th><th class="n">Total earned</th><th>Requested</th><th></th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td data-uid="${esc(x.uid)}">${esc(nameFor(x.uid))}</td><td><span class="upi">${esc(x.r.upi)}</span> <button class="btn sm" type="button" data-copy="${esc(x.r.upi)}">Copy</button></td><td class="n">${inr(x.r.amount)}</td><td class="n">${inr(x.b.earned)}</td><td>${fmtDate(x.r.at)}</td><td><button class="btn sm primary" type="button" data-pay="${i}">Mark paid</button></td></tr>`).join('')||'<tr><td class="empty-row" colspan="6">No payout requests waiting.</td></tr>'}</tbody></table></div>
-  <p class="sub">Check that a creator’s total earned covers the request before you pay. Mark a request paid only after the UPI transfer succeeds; the creator sees the change right away.</p>`;
-  loadNames([...new Set(rows.map(x=>x.uid))]).then(()=>{for(const td of body.querySelectorAll('td[data-uid]'))td.textContent=nameFor(td.dataset.uid)})}
+/* owner: settings, order checks, commission, creator payouts */
+let adminOrders=[],adminPayouts=[];
+function renderAdmin(){if(view!=='admin'||!isOwner)return;const body=$('adminBody'),pct=commissionPct();
+  const keep={};for(const id of ['setUpi','setPayee','setPct']){const el=$(id);if(el)keep[id]=[el.value,document.activeElement===el]}
+  adminOrders=[];for(const[buyer,d]of Object.entries(allOrders))for(const o of (d.list||[]))if(orderState(o,allDeliv[buyer])==='pending')adminOrders.push({buyer,o});
+  adminOrders.sort((a,b)=>a.o.at-b.o.at);
+  let gross=0,commission=0,owed=0,paidOut=0;
+  for(const[uid,s]of Object.entries(allSales)){for(const x of (s.list||[])){gross+=+x.price||0;commission+=(+x.price||0)-(+x.net||0)}}
+  for(const L of Object.values(allLedger))for(const x of (L.paid||[]))paidOut+=+x.amount||0;
+  for(const[uid,s]of Object.entries(allSales))owed+=(s.list||[]).reduce((a,x)=>a+(+x.net||0),0);
+  owed=Math.max(0,owed-paidOut);
+  adminPayouts=[];for(const[uid,p]of Object.entries(allPay)){const b=balance(allSales[uid],p,allLedger[uid]);
+    for(const r of (p.requests||[]))if(!b.paidIds.has(r.id))adminPayouts.push({uid,r,b})}
+  adminPayouts.sort((a,b)=>a.r.at-b.r.at);
+  const pendingAmt=adminOrders.reduce((a,x)=>a+(+x.o.price||0),0);
+  body.innerHTML=`<div class="tiles"><div class="tile hl"><span>Your commission</span><b>${inr(commission)}</b></div><div class="tile"><span>Total sales</span><b>${inr(gross)}</b></div><div class="tile"><span>Owed to creators</span><b>${inr(owed)}</b></div><div class="tile"><span>Orders to check</span><b>${adminOrders.length}${adminOrders.length?` · ${inr(pendingAmt)}`:''}</b></div></div>
+  <h3 class="h3">Payment settings</h3>
+  <form class="settings" id="setForm" novalidate>
+    <label class="fl" for="setUpi">Your UPI ID (buyers pay here)<input type="text" id="setUpi" placeholder="you@okaxis" autocomplete="off" value="${esc(cfg.upi||'')}"></label>
+    <label class="fl" for="setPayee">Name shown to buyers<input type="text" id="setPayee" maxlength="40" placeholder="Glowwall" autocomplete="off" value="${esc(cfg.payee||'')}"></label>
+    <label class="fl" for="setPct">Your commission (%)<input type="number" id="setPct" min="0" max="90" step="1" value="${pct}"></label>
+    <div><button class="btn primary" type="submit">Save settings</button></div>
+  </form>
+  <p class="err" id="setErr" hidden></p>
+  ${salesOpen()?'':'<p class="note"><b>Sales are closed</b> until you save your UPI ID. Creators can still upload and set prices.</p>'}
+  <h3 class="h3">Orders to check</h3>
+  <p class="sub" style="margin:-4px 0 10px">Find each UTR in your bank or UPI app. Unlock only when the amount arrived; reject it if you can’t find it.</p>
+  <div class="plist" style="margin-bottom:22px">${adminOrders.map((x,i)=>`<div class="prow"><div class="grow"><div class="t">${esc(x.o.title)} · ${inr(x.o.price)}</div><div class="m"><span data-uid="${esc(x.buyer)}">${esc(nameFor(x.buyer))}</span> · UTR <span class="upi">${esc(x.o.utr)}</span> · ${fmtDate(x.o.at)}</div></div><div class="acts"><button class="btn sm primary" type="button" data-ok="${i}">Unlock</button><button class="btn sm" type="button" data-no="${i}">Reject</button></div></div>`).join('')||'<p class="empty" style="padding:18px 0">No orders waiting.</p>'}</div>
+  <h3 class="h3">Creator payout requests</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Creator</th><th>UPI ID</th><th class="n">Amount</th><th class="n">Total earned</th><th>Requested</th><th></th></tr></thead><tbody>${adminPayouts.map((x,i)=>`<tr><td data-uid="${esc(x.uid)}">${esc(nameFor(x.uid))}</td><td><span class="upi">${esc(x.r.upi)}</span> <button class="btn sm" type="button" data-copy="${esc(x.r.upi)}">Copy</button></td><td class="n">${inr(x.r.amount)}</td><td class="n">${inr(x.b.earned)}</td><td>${fmtDate(x.r.at)}</td><td><button class="btn sm primary" type="button" data-pay="${i}">Mark paid</button></td></tr>`).join('')||'<tr><td class="empty-row" colspan="6">No payout requests waiting.</td></tr>'}</tbody></table></div>
+  <p class="sub">Mark a payout paid only after your UPI transfer succeeds; the creator sees the change right away.</p>`;
+  for(const id in keep){const el=$(id);if(el){el.value=keep[id][0];if(keep[id][1])el.focus()}}
+  fillNames(body)}
+$('adminBody').addEventListener('submit',async e=>{if(e.target.id!=='setForm')return;e.preventDefault();
+  const upi=$('setUpi').value.trim(),payee=$('setPayee').value.trim(),pct=Math.round(+$('setPct').value),serr=m=>{$('setErr').textContent=m;$('setErr').hidden=false};
+  if(upi&&!UPI_RE.test(upi))return serr('Enter a valid UPI ID, like you@okaxis.');
+  if(!(pct>=0&&pct<=90))return serr('Set a commission between 0 and 90%.');
+  try{await enqueue('config/app',()=>db.doc('config/app').set({upi,payee,commission:pct,updatedAt:Date.now()}));toast('Settings saved.')}
+  catch(err){serr('Couldn’t save the settings. Try again.')}});
 $('adminBody').addEventListener('click',async e=>{
   const c=e.target.closest('[data-copy]');
   if(c){try{await navigator.clipboard.writeText(c.dataset.copy);toast('UPI ID copied.')}
     catch(err){const s=getSelection(),r=document.createRange();r.selectNodeContents(c.previousElementSibling);s.removeAllRanges();s.addRange(r);toast('UPI ID selected. Copy it from the selection.')}return}
-  const p=e.target.closest('[data-pay]');if(!p)return;const x=adminRows[+p.dataset.pay];if(!x)return;p.disabled=true;
-  try{await enqueue('ledger/'+x.uid,()=>{const L=allLedger[x.uid]||{};return db.doc('ledger/'+x.uid).set({paid:[...(L.paid||[]),{id:x.r.id,amount:x.r.amount,at:Date.now()}]})});toast('Marked paid.')}
-  catch(err){p.disabled=false;toast('Couldn’t save that. Try again.')}});
+  const ok=e.target.closest('[data-ok]'),no=e.target.closest('[data-no]'),pay=e.target.closest('[data-pay]');
+  if(ok||no){const x=adminOrders[+(ok||no).dataset[ok?'ok':'no']];if(!x)return;(ok||no).disabled=true;const{buyer,o}=x;
+    try{if(no){await enqueue('deliveries/'+buyer,()=>{const d=allDeliv[buyer]||{};return db.doc('deliveries/'+buyer).set({items:d.items||{},rejected:{...(d.rejected||{}),[o.id]:Date.now()}})});toast('Order rejected. The buyer sees it wasn’t matched.');return}
+      const asset=allVault[o.creator]&&allVault[o.creator].walls&&allVault[o.creator].walls[o.wall];
+      if(!asset){(ok||no).disabled=false;toast('The creator removed this wallpaper’s file. Reject the order and refund the buyer.');return}
+      const pctNow=commissionPct(),net=creatorNet(+o.price||0,pctNow);
+      await enqueue('sales/'+o.creator,()=>{const s=allSales[o.creator]||{},list=s.list||[];if(list.some(v=>v.orderId===o.id))return;
+        return db.doc('sales/'+o.creator).set({list:[...list,{orderId:o.id,buyer,key:o.key,title:o.title,price:+o.price||0,commission:pctNow,net,at:Date.now()}]})});
+      await enqueue('deliveries/'+buyer,()=>{const d=allDeliv[buyer]||{};return db.doc('deliveries/'+buyer).set({items:{...(d.items||{}),[o.key]:{asset,orderId:o.id,at:Date.now()}},rejected:d.rejected||{}})});
+      toast(`Unlocked. Your commission: ${inr((+o.price||0)-net)}.`)}
+    catch(err){(ok||no).disabled=false;toast('Couldn’t save that. Try again.')}return}
+  if(pay){const x=adminPayouts[+pay.dataset.pay];if(!x)return;pay.disabled=true;
+    try{await enqueue('ledger/'+x.uid,()=>{const L=allLedger[x.uid]||{};return db.doc('ledger/'+x.uid).set({paid:[...(L.paid||[]),{id:x.r.id,amount:x.r.amount,at:Date.now()}]})});toast('Marked paid.')}
+    catch(err){pay.disabled=false;toast('Couldn’t save that. Try again.')}}});
 
 /* connect to the shared store */
-function rerenderCom(){renderCommunity();renderEarn();renderAdmin();renderUploadGate();if(vOpen&&vMode==='com')updateCom()}
+function rerenderCom(){renderCommunity();renderEarn();renderAdmin();renderUploadGate();renderPurchases();if(vOpen&&vMode==='com')updateCom()}
 const onErr=e=>{if(e&&e.code==='revoked'){comState='offline';rerenderCom()}};
 const toMap=s=>{const o={};for(const x of s.docs)o[x.id]=x.data();return o};
+const docVal=x=>x.exists?x.data():null;
 (async()=>{
   if(!window.claude||typeof window.claude.use!=='function'){comState='offline';rerenderCom();return}
   const[d,u]=await Promise.all([claude.use('db'),claude.use('user')]);db=d;userCap=u;
@@ -848,13 +1009,17 @@ const toMap=s=>{const o={};for(const x of s.docs)o[x.id]=x.data();return o};
   [assets,downloads]=await Promise.all([claude.use('assets'),claude.use('downloads')]);
   document.querySelector('.tab[data-view="admin"]').hidden=!isOwner;
   comState='ready';
+  db.doc('config/app').onSnapshot(x=>{cfg=docVal(x)||{};rerenderCom()},onErr);
   db.collection('creators').onSnapshot(s=>{creators=toMap(s);rerenderCom()},onErr);
   db.collection('acts').onSnapshot(s=>{acts=toMap(s);rerenderCom()},onErr);
-  if(me){db.doc('payouts/'+me).onSnapshot(x=>{myPay=x.exists?x.data():null;renderEarn()},onErr);
-    db.doc('ledger/'+me).onSnapshot(x=>{myLedger=x.exists?x.data():null;renderEarn()},onErr)}
-  if(isOwner){db.collection('payouts').onSnapshot(s=>{allPay=toMap(s);renderAdmin()},onErr);
-    db.collection('ledger').onSnapshot(s=>{allLedger=toMap(s);renderAdmin()},onErr)}
+  if(me){const mine=(c,set)=>db.doc(c+'/'+me).onSnapshot(x=>{set(docVal(x));rerenderCom()},onErr);
+    mine('vault',v=>{myVault=v});mine('orders',v=>{myOrders=v});mine('deliveries',v=>{myDeliv=v});
+    mine('sales',v=>{mySales=v});mine('payouts',v=>{myPay=v});mine('ledger',v=>{myLedger=v})}
+  if(isOwner){const all=(c,set)=>db.collection(c).onSnapshot(s=>{set(toMap(s));rerenderCom()},onErr);
+    all('vault',v=>{allVault=v});all('orders',v=>{allOrders=v});all('deliveries',v=>{allDeliv=v});
+    all('sales',v=>{allSales=v});all('payouts',v=>{allPay=v});all('ledger',v=>{allLedger=v})}
   rerenderCom()})();
+
 /* ---------- set as wallpaper: one tap inside the Android app, guided save on the web ---------- */
 const NATIVE=window.GlowwallNative||null;
 $('bSet').innerHTML=vbHTML(ICON.phone,'Set');$('cSet').innerHTML=vbHTML(ICON.phone,'Set');$('setClose').innerHTML=ICON.close;
@@ -862,12 +1027,12 @@ const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform===
 function screenPx(){if(NATIVE&&NATIVE.screenSize){const[w,h]=String(NATIVE.screenSize()).split(',').map(Number);if(w&&h)return[w,h]}
   const d=Math.min(3,window.devicePixelRatio||1),a=Math.round(Math.min(screen.width,screen.height)*d),b=Math.round(Math.max(screen.width,screen.height)*d);return[a,b]}
 async function wallpaperBlob(it,type){
-  if(vMode==='com'){const r=await fetch(blobURL(it.w.asset));if(!r.ok)throw new Error('fetch');return r.blob()}
+  if(vMode==='com'){const u=comFullURL(it);if(!u)throw new Error('locked');const r=await fetch(u);if(!r.ok)throw new Error('fetch');return r.blob()}
   const[W,H]=screenPx(),c=document.createElement('canvas');c.width=W;c.height=H;drawItem(c.getContext('2d'),W,H,it,isLive(it)?now()+it.t0:it.t0+3);
   return new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('encode')),type,.95))}
 const toB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
 let setURL=null;
-async function openSet(){const it=vList[vIdx];closeSheet();const S=$('setSheet');
+async function openSet(){const it=vList[vIdx];if(vMode==='com'&&!comFullURL(it)){openBuy();return}closeSheet();const S=$('setSheet');
   const live=vMode==='gen'&&isLive(it);
   if(NATIVE){$('setNote').textContent=live?'Live wallpapers are set as the frame showing right now. Where should it go?':'Where should it go?';
     $('setTargets').hidden=false;$('setResult').hidden=true;S.hidden=false;S.querySelector('[data-t]').focus();return}
@@ -893,7 +1058,7 @@ $('setTargets').addEventListener('click',async e=>{const b=e.target.closest('[da
 // Inside the Android app there is no Claude runtime, so only the Originals work there.
 if(NATIVE&&!window.claude){$('tabs').hidden=true}
 else{try{const v=localStorage.getItem('glowwall-view');if(v&&v!=='admin'&&$('view-'+v))showView(v)}catch(e){}}
-window.__glowwallBack=()=>{if(!sheet.hidden||!$('setSheet').hidden){closeSheet();return true}if(vOpen){closeViewer();return true}return false};
+window.__glowwallBack=()=>{if(!sheet.hidden||!$('setSheet').hidden||!$('buySheet').hidden){closeSheet();return true}if(vOpen){closeViewer();return true}return false};
 
 try{const f=localStorage.getItem('glowwall-filter');if(f&&CATS[f])filter=f}catch(e){}
 renderChips();renderGrid();requestAnimationFrame(loop);
