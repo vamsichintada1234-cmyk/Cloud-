@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
-import android.os.Build;
 import android.system.Os;
 import android.util.Log;
 
@@ -43,7 +42,9 @@ final class NodeRunner {
                 Os.setenv("PORT", String.valueOf(PORT), true);
                 Os.setenv("HOST", "127.0.0.1", true);
                 Os.setenv("REFCUT_DATA", data.getAbsolutePath(), true);
-                Os.setenv("FFMPEG", installFfmpeg(app).getAbsolutePath(), true);
+                FfmpegBridge.start();
+                Os.setenv("REFCUT_FFMPEG_BRIDGE", "127.0.0.1:" + FfmpegBridge.port, true);
+                Os.setenv("REFCUT_BRIDGE_TOKEN", FfmpegBridge.token, true);
                 Os.setenv("REFCUT_NO_FFPROBE", "1", true);
                 Os.setenv("TMPDIR", app.getCacheDir().getAbsolutePath(), true);
                 Os.setenv("HOME", app.getFilesDir().getAbsolutePath(), true);
@@ -67,20 +68,6 @@ final class NodeRunner {
             }
         }
         return false;
-    }
-
-    // Unpack the ffmpeg build matching this phone's CPU into app storage and mark it executable.
-    private static File installFfmpeg(Context ctx) throws Exception {
-        File bin = new File(ctx.getFilesDir(), "bin/ffmpeg");
-        PackageInfo pi = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
-        SharedPreferences prefs = ctx.getSharedPreferences("refcut", Context.MODE_PRIVATE);
-        if (bin.canExecute() && prefs.getLong("ffmpegFrom", 0) == pi.lastUpdateTime) return bin;
-        String abi = "armeabi-v7a";
-        for (String a : Build.SUPPORTED_ABIS) if (a.equals("arm64-v8a")) { abi = a; break; }
-        copyAssets(ctx.getAssets(), "ffmpeg/" + abi + "/ffmpeg", bin);
-        if (!bin.setExecutable(true, false)) throw new IOException("cannot mark ffmpeg executable");
-        prefs.edit().putLong("ffmpegFrom", pi.lastUpdateTime).apply();
-        return bin;
     }
 
     // Re-copy the web app whenever the APK is updated.

@@ -6,8 +6,8 @@ def thirdParty = rootProject.file("third_party")
 def webApp = rootProject.file("../app")
 def genAssets = layout.buildDirectory.dir("generated/nodeapp-assets")
 def genJni = layout.buildDirectory.dir("generated/refcut-jniLibs")
-// CPU types to include; build a smaller single-ABI APK with -Pabis=arm64-v8a
-def abis = (project.findProperty("abis") ?: "arm64-v8a,armeabi-v7a").split(",").collect { it.trim() }
+// CPU types to include, e.g. -Pabis=arm64-v8a,x86_64 (FFmpegKit ships arm64-v8a and x86_64 only)
+def abis = (project.findProperty("abis") ?: "arm64-v8a").split(",").collect { it.trim() }
 
 android {
     namespace "com.refcut.app"
@@ -17,12 +17,10 @@ android {
     defaultConfig {
         applicationId "com.refcut.app"
         minSdk 24
-        // 28: lets the app run the ffmpeg program it unpacks into its own storage (newer targets forbid
-        // executing app-data files). Fine for a sideloaded APK; a Play Store build would need another route.
-        targetSdk 28
-        versionCode 4
-        versionName "1.3"
-        // 64-bit phones and 32-bit Android (common on budget / Android Go phones)
+        // 34, not 35: Android 15 forces edge-to-edge drawing on 35, which would put the UI under the status bar
+        targetSdk 34
+        versionCode 5
+        versionName "1.4"
         ndk { abiFilters(*abis) }
         externalNativeBuild {
             cmake {
@@ -66,6 +64,11 @@ android {
     }
 }
 
+dependencies {
+    // ffmpeg built for Android (community-maintained continuation of FFmpegKit, GPL-3.0, includes x264)
+    implementation "dev.ffmpegkit-maintained:ffmpeg-kit-full-gpl:7.1.7"
+}
+
 // The RefCut web app (server + UI) is bundled as assets and run by Node on the phone.
 def copyNodeApp = tasks.register("copyNodeApp", Sync) {
     from(webApp) {
@@ -74,21 +77,13 @@ def copyNodeApp = tasks.register("copyNodeApp", Sync) {
     into genAssets.map { it.dir("nodeapp") }
 }
 
-// libnode.so per ABI, and ffmpeg per ABI as an asset (unpacked and made executable on first launch)
-def genBins = layout.buildDirectory.dir("generated/ffmpeg-assets")
+// libnode.so per ABI
 def copyNativeBins = tasks.register("copyNativeBins", Sync) {
     abis.each { abi -> from("${thirdParty}/nodejs-mobile/bin/${abi}/libnode.so") { into abi } }
     into genJni
-}
-def copyFfmpeg = tasks.register("copyFfmpeg", Sync) {
-    abis.each { abi -> from("${thirdParty}/ffmpeg/${abi}/ffmpeg") { into "ffmpeg/${abi}" } }
-    into genBins
     doFirst {
-        abis.each { abi ->
-            if (!file("${thirdParty}/ffmpeg/${abi}/ffmpeg").exists()) throw new GradleException("Run android/fetch-binaries.sh first")
-        }
+        if (!file("${thirdParty}/nodejs-mobile/bin/arm64-v8a/libnode.so").exists()) throw new GradleException("Run android/fetch-binaries.sh first")
     }
 }
-android.sourceSets.main.assets.srcDirs += genBins
 
-tasks.named("preBuild") { dependsOn copyNodeApp, copyNativeBins, copyFfmpeg }
+tasks.named("preBuild") { dependsOn copyNodeApp, copyNativeBins }
