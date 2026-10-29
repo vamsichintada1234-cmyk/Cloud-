@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Shadow Hunter</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #151821;
+        color: #e8ecf4;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        touch-action: none;
+      }
+      #hud {
+        position: fixed;
+        inset: 0 0 auto 0;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 16px;
+        font-size: 15px;
+        font-weight: 600;
+        pointer-events: none;
+      }
+      #hud .spacer {
+        flex: 1;
+      }
+      #hp {
+        width: 120px;
+        height: 10px;
+        border-radius: 5px;
+        background: #2a2f3c;
+        overflow: hidden;
+      }
+      #hpFill {
+        height: 100%;
+        width: 100%;
+        background: #4ade80;
+        transition: width 0.15s;
+      }
+      .gem {
+        color: #4ff0ff;
+      }
+      #overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(10, 12, 18, 0.72);
+      }
+      #overlay.show {
+        display: flex;
+      }
+      .card {
+        text-align: center;
+        padding: 28px 32px;
+        border-radius: 14px;
+        background: #1f2430;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        max-width: calc(100vw - 64px);
+      }
+      .card h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+      }
+      .card p {
+        margin: 0 0 20px;
+        color: #a9b2c6;
+      }
+      button {
+        font: inherit;
+        font-weight: 700;
+        padding: 12px 28px;
+        border: 0;
+        border-radius: 10px;
+        background: #d8283a;
+        color: #fff;
+        cursor: pointer;
+      }
+      #bench {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.6);
+        font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
+        white-space: pre;
+        display: none;
+        pointer-events: none;
+      }
+      #hint {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 14px;
+        text-align: center;
+        font-size: 13px;
+        color: #8d97ad;
+        pointer-events: none;
+        transition: opacity 0.6s;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="hud">
+      <span id="level">Level 1</span>
+      <span id="targets">Targets 0</span>
+      <span class="spacer"></span>
+      <span class="gem" id="gems">◆ 0</span>
+      <div id="hp"><div id="hpFill"></div></div>
+    </div>
+    <div id="hint">Tap or click to move · WASD / arrows also work · Reach a guard to take them out · Stay out of the cones</div>
+    <pre id="bench"></pre>
+    <div id="overlay">
+      <div class="card">
+        <h1 id="ovTitle"></h1>
+        <p id="ovText"></p>
+        <button id="ovBtn"></button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
