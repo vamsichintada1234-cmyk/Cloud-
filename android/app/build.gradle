@@ -1,0 +1,82 @@
+plugins {
+    id "com.android.application"
+}
+
+def thirdParty = rootProject.file("third_party")
+def webApp = rootProject.file("../app")
+def genAssets = layout.buildDirectory.dir("generated/nodeapp-assets")
+def genJni = layout.buildDirectory.dir("generated/refcut-jniLibs")
+
+android {
+    namespace "com.refcut.app"
+    compileSdk 35
+    ndkVersion "27.2.12479018"
+
+    defaultConfig {
+        applicationId "com.refcut.app"
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName "1.0"
+        ndk { abiFilters "arm64-v8a" }
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                arguments "-DANDROID_STL=c++_shared", "-DNODE_MOBILE_DIR=${thirdParty}/nodejs-mobile"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // signed with the debug key so the APK installs directly; use your own keystore for the Play Store
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += genAssets
+            jniLibs.srcDirs += genJni
+        }
+    }
+
+    packaging {
+        // ffmpeg is executed from nativeLibraryDir, so native libs must be extracted on install
+        jniLibs { useLegacyPackaging true }
+        jniLibs.pickFirsts += ["**/libnode.so", "**/libc++_shared.so"]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// The RefCut web app (server + UI) is bundled as assets and run by Node on the phone.
+def copyNodeApp = tasks.register("copyNodeApp", Sync) {
+    from(webApp) {
+        include "server.js", "lib/**", "public/**"
+    }
+    into genAssets.map { it.dir("nodeapp") }
+}
+
+// libnode.so and ffmpeg (renamed lib*.so so Android installs it as an executable native lib)
+def copyNativeBins = tasks.register("copyNativeBins", Sync) {
+    from("${thirdParty}/nodejs-mobile/bin/arm64-v8a/libnode.so") { into "arm64-v8a" }
+    from("${thirdParty}/ffmpeg/ffmpeg") { into "arm64-v8a"; rename { "libffmpeg.so" } }
+    into genJni
+    doFirst {
+        if (!file("${thirdParty}/ffmpeg/ffmpeg").exists()) throw new GradleException("Run android/fetch-binaries.sh first")
+    }
+}
+
+tasks.named("preBuild") { dependsOn copyNodeApp, copyNativeBins }

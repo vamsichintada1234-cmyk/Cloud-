@@ -9,6 +9,7 @@ const { renderPlan } = require("./lib/render");
 const { run, FFMPEG } = require("./lib/ff");
 
 const PORT = Number(process.env.PORT || 5173);
+// HOST: interface to listen on (default: all, so phones on the same Wi-Fi can connect; the Android app uses 127.0.0.1)
 const DATA = path.resolve(process.env.REFCUT_DATA || path.join(__dirname, "data"));
 const PUBLIC = path.join(__dirname, "public");
 fs.mkdirSync(DATA, { recursive: true });
@@ -238,4 +239,4 @@ function validatePlan(plan, p) {
 
 http.createServer((req, res) => {
   route(req, res).catch((e) => { if (!res.headersSent) json(res, e.code || 500, { error: e.message }); else res.end(); if (!e.code) console.error(e); });
-}).listen(PORT, () => console.log(`RefCut running → http://localhost:${PORT}`));
+}).listen(PORT, process.env.HOST, () => console.log(`RefCut running → http://localhost:${PORT}`));
