@@ -15,9 +15,11 @@ android {
     defaultConfig {
         applicationId "com.refcut.app"
         minSdk 24
-        targetSdk 35
-        versionCode 2
-        versionName "1.1"
+        // 28: lets the app run the ffmpeg program it unpacks into its own storage (newer targets forbid
+        // executing app-data files). Fine for a sideloaded APK; a Play Store build would need another route.
+        targetSdk 28
+        versionCode 3
+        versionName "1.2"
         // 64-bit phones and 32-bit Android (common on budget / Android Go phones)
         ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
         externalNativeBuild {
@@ -51,7 +53,7 @@ android {
     }
 
     packaging {
-        // ffmpeg is executed from nativeLibraryDir, so native libs must be extracted on install
+        // keep the APK small: native libs compressed and extracted on install
         jniLibs { useLegacyPackaging true }
         jniLibs.pickFirsts += ["**/libnode.so", "**/libc++_shared.so"]
     }
@@ -70,19 +72,22 @@ def copyNodeApp = tasks.register("copyNodeApp", Sync) {
     into genAssets.map { it.dir("nodeapp") }
 }
 
-// libnode.so and ffmpeg per ABI (ffmpeg renamed lib*.so so Android installs it as an executable native lib)
+// libnode.so per ABI, and ffmpeg per ABI as an asset (unpacked and made executable on first launch)
 def abis = ["arm64-v8a", "armeabi-v7a"]
+def genBins = layout.buildDirectory.dir("generated/ffmpeg-assets")
 def copyNativeBins = tasks.register("copyNativeBins", Sync) {
-    abis.each { abi ->
-        from("${thirdParty}/nodejs-mobile/bin/${abi}/libnode.so") { into abi }
-        from("${thirdParty}/ffmpeg/${abi}/ffmpeg") { into abi; rename { "libffmpeg.so" } }
-    }
+    abis.each { abi -> from("${thirdParty}/nodejs-mobile/bin/${abi}/libnode.so") { into abi } }
     into genJni
+}
+def copyFfmpeg = tasks.register("copyFfmpeg", Sync) {
+    abis.each { abi -> from("${thirdParty}/ffmpeg/${abi}/ffmpeg") { into "ffmpeg/${abi}" } }
+    into genBins
     doFirst {
         abis.each { abi ->
             if (!file("${thirdParty}/ffmpeg/${abi}/ffmpeg").exists()) throw new GradleException("Run android/fetch-binaries.sh first")
         }
     }
 }
+android.sourceSets.main.assets.srcDirs += genBins
 
-tasks.named("preBuild") { dependsOn copyNodeApp, copyNativeBins }
+tasks.named("preBuild") { dependsOn copyNodeApp, copyNativeBins, copyFfmpeg }
