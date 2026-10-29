@@ -1,6 +1,6 @@
 import type { GameEvent } from "./game";
 
-export type SoundName = GameEvent | "click";
+export type SoundName = GameEvent | "click" | "buy" | "deny";
 
 const MUSIC_KEY = "shadowHunter.music";
 const SFX_KEY = "shadowHunter.sfx";
@@ -145,6 +145,15 @@ export class Sound {
         break;
       case "lost":
         [392, 330, 262, 196].forEach((f, i) => this.tone("sawtooth", f, f * 0.97, t + i * 0.16, 0.3, 0.18, 1400));
+        break;
+      case "buy":
+        // Coins tumbling, then a bright chord.
+        for (let i = 0; i < 6; i++) this.tone("sine", 1400 + i * 180, 2200 + i * 180, t + i * 0.035, 0.07, 0.12);
+        [784, 988, 1175].forEach((f) => this.tone("triangle", f, f, t + 0.22, 0.4, 0.15));
+        break;
+      case "deny":
+        this.tone("square", 180, 150, t, 0.12, 0.14, 1200);
+        this.tone("square", 140, 120, t + 0.13, 0.16, 0.14, 1200);
         break;
     }
   }

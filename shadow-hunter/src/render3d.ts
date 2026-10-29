@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Effect, Game, Guard } from "./game";
+import type { Hero } from "./heroes";
 import { Grid, TILE, Vec, mulberry32 } from "./map";
 
 /** Game coordinates are pixels with 32 px per tile; the 3D scene uses 1 unit per tile (x -> x, y -> z). */
@@ -115,12 +116,42 @@ function mesh(geo: THREE.BufferGeometry, mat: THREE.Material, shadow: boolean): 
   return m;
 }
 
-function makePerson(kind: "guard" | "ninja", shadows: boolean): Person {
+interface NinjaMats {
+  body: THREE.MeshStandardMaterial;
+  legs: THREE.MeshStandardMaterial;
+  head: THREE.MeshStandardMaterial;
+  band: THREE.MeshStandardMaterial;
+  blade: THREE.MeshStandardMaterial;
+}
+
+/** Materials for a shop character's look; see-through characters get transparent materials. */
+function ninjaMats(look: Hero["look"]): NinjaMats {
+  const m = (color: number, roughness: number, metalness = 0) => {
+    const mat = std(color, roughness, metalness);
+    if (look.opacity < 1) {
+      mat.transparent = true;
+      mat.opacity = look.opacity;
+      mat.emissive.setHex(color);
+      mat.emissiveIntensity = 0.25;
+    }
+    return mat;
+  };
+  return {
+    body: m(look.body, 0.8),
+    legs: m(look.legs, 0.85),
+    head: m(look.head, 0.7),
+    band: m(look.band, 0.6),
+    blade: m(look.blade, 0.2, 0.9),
+  };
+}
+
+function makePerson(kind: "guard" | "ninja", shadows: boolean, nm?: NinjaMats): Person {
   const guard = kind === "guard";
+  const n = nm ?? { body: MAT.ninjaBody, legs: MAT.ninjaLegs, head: MAT.ninjaHead, band: MAT.red, blade: MAT.blade };
   const root = new THREE.Group();
   const pivot = new THREE.Group();
   root.add(pivot);
-  const legMat = guard ? MAT.guardLegs : MAT.ninjaLegs;
+  const legMat = guard ? MAT.guardLegs : n.legs;
 
   const leg = (z: number) => {
     const g = new THREE.Group();
@@ -132,19 +163,19 @@ function makePerson(kind: "guard" | "ninja", shadows: boolean): Person {
   const legL = leg(-0.085);
   const legR = leg(0.085);
 
-  const body = mesh(GEO.torso, guard ? MAT.guardBody : MAT.ninjaBody, shadows);
+  const body = mesh(GEO.torso, guard ? MAT.guardBody : n.body, shadows);
   body.position.y = 0.68;
   body.scale.set(0.85, 1, 1.32);
   pivot.add(body);
 
-  const head = mesh(GEO.head, guard ? MAT.skin : MAT.ninjaHead, shadows);
+  const head = mesh(GEO.head, guard ? MAT.skin : n.head, shadows);
   head.position.y = 1.03;
   pivot.add(head);
 
   const arm = (z: number) => {
     const g = new THREE.Group();
     g.position.set(0, 0.86, z);
-    g.add(mesh(GEO.arm, guard ? MAT.guardBody : MAT.ninjaBody, shadows), mesh(GEO.hand, guard ? MAT.skin : MAT.ninjaHead, false));
+    g.add(mesh(GEO.arm, guard ? MAT.guardBody : n.body, shadows), mesh(GEO.hand, guard ? MAT.skin : n.head, false));
     pivot.add(g);
     return g;
   };
@@ -168,20 +199,20 @@ function makePerson(kind: "guard" | "ninja", shadows: boolean): Person {
     armL.rotation.set(0.5, 0, 1.25);
     armR.rotation.set(-0.15, 0, 0.95);
   } else {
-    const band = mesh(GEO.band, MAT.red, false);
+    const band = mesh(GEO.band, n.band, false);
     band.position.y = 1.05;
     band.rotation.x = Math.PI / 2;
     const eyes = mesh(GEO.eyes, MAT.eyes, false);
     eyes.position.set(0.12, 1.04, 0);
     pivot.add(band, eyes);
     for (const z of [-0.035, 0.035]) {
-      const t = mesh(GEO.tail, MAT.red, false);
+      const t = mesh(GEO.tail, n.band, false);
       t.position.set(-0.13, 1.05, z);
       pivot.add(t);
       tails.push(t);
     }
     blade = new THREE.Group();
-    const steel = mesh(GEO.blade, MAT.blade, shadows);
+    const steel = mesh(GEO.blade, n.blade, shadows);
     steel.position.x = 0.4;
     const hilt = mesh(GEO.hilt, MAT.metal, false);
     hilt.position.x = 0.02;
@@ -226,6 +257,8 @@ export class Renderer3D {
   private guardsRef: Guard[] | null = null;
   private guardViews: GuardView[] = [];
   private player: Person;
+  private heroMats: NinjaMats | null = null;
+  private hero: Hero | null = null;
   private playerMoving = 0;
   private playerLastStride = 0;
   private gemPool: THREE.Mesh[] = [];
@@ -282,9 +315,22 @@ export class Renderer3D {
     this.scene.add(this.playerLight);
 
     this.player = makePerson("ninja", true);
+    this.player.root.visible = false;
     this.markerMesh = new THREE.Mesh(GEO.marker, MAT.marker);
     this.markerMesh.visible = false;
     this.scene.add(this.level, this.dynamic, this.player.root, this.markerMesh);
+  }
+
+  /** Swap the player model for a shop character. */
+  setHero(hero: Hero): void {
+    if (this.hero === hero) return;
+    this.hero = hero;
+    this.scene.remove(this.player.root);
+    if (this.heroMats) for (const m of Object.values(this.heroMats)) m.dispose();
+    this.heroMats = ninjaMats(hero.look);
+    this.player = makePerson("ninja", hero.look.opacity === 1, this.heroMats);
+    this.player.root.scale.setScalar(hero.look.scale);
+    this.scene.add(this.player.root);
   }
 
   resize(): void {
@@ -448,7 +494,7 @@ export class Renderer3D {
     pp.armL.rotation.z = -swing;
     pp.armR.rotation.z = pl.lungeT > 0 ? 1.5 : swing + 0.25;
     for (let i = 0; i < pp.tails.length; i++) pp.tails[i].rotation.y = Math.sin(game.time * 12 + i) * 0.35 + (i ? 0.25 : -0.25);
-    pp.body.material = pl.hurtT > 0 ? MAT.hurt : MAT.ninjaBody;
+    pp.body.material = pl.hurtT > 0 ? MAT.hurt : (this.heroMats?.body ?? MAT.ninjaBody);
     pp.root.visible = game.outcome !== "lost" || Math.floor(game.time * 8) % 2 === 0;
     this.playerLight.position.set(pl.x * S, 1.8, pl.y * S);
 
@@ -585,8 +631,9 @@ export class Renderer3D {
     const w = 34;
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(hp.x - w / 2 - 1, hp.y - 1, w + 2, 7);
-    ctx.fillStyle = pl.hp > 50 ? "#4ade80" : pl.hp > 25 ? "#facc15" : "#ef4444";
-    ctx.fillRect(hp.x - w / 2, hp.y, (w * pl.hp) / 100, 5);
+    const frac = pl.hp / pl.maxHp;
+    ctx.fillStyle = frac > 0.5 ? "#4ade80" : frac > 0.25 ? "#facc15" : "#ef4444";
+    ctx.fillRect(hp.x - w / 2, hp.y, w * frac, 5);
 
     for (const e of game.effects) {
       if (e.kind !== "text") continue;
@@ -627,4 +674,42 @@ function disposeTree(obj: THREE.Object3D): void {
       mat.dispose();
     }
   });
+}
+
+/** Small 3D portraits of each shop character, rendered once with a throwaway renderer. */
+export function renderHeroPortraits(heroes: Hero[], width = 220, height = 260): string[] {
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  r.setSize(width, height, false);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xc8d4f0, 0x1a1c24, 1.6));
+  const key = new THREE.DirectionalLight(0xffffff, 2.4);
+  key.position.set(2, 3, 3);
+  const rim = new THREE.DirectionalLight(0x7fb0ff, 2);
+  rim.position.set(-3, 2, -2);
+  scene.add(key, rim);
+  const cam = new THREE.PerspectiveCamera(30, width / height, 0.1, 20);
+  cam.position.set(1.9, 1.5, 2.3);
+  cam.lookAt(0, 0.62, 0);
+  const out: string[] = [];
+  for (const h of heroes) {
+    const mats = ninjaMats(h.look);
+    const p = makePerson("ninja", false, mats);
+    p.root.scale.setScalar(h.look.scale);
+    p.root.rotation.y = 0.5;
+    p.armR.rotation.z = 0.9;
+    p.armL.rotation.z = -0.3;
+    p.legL.rotation.z = 0.25;
+    p.legR.rotation.z = -0.25;
+    scene.add(p.root);
+    r.render(scene, cam);
+    out.push(r.domElement.toDataURL("image/png"));
+    scene.remove(p.root);
+    for (const m of Object.values(mats)) m.dispose();
+  }
+  r.dispose();
+  r.forceContextLoss();
+  return out;
 }

@@ -1,6 +1,7 @@
 import { Sound } from "./audio";
 import { Game } from "./game";
-import { Renderer3D } from "./render3d";
+import { DEFAULT_HERO, HEROES, Hero, heroBars, heroById } from "./heroes";
+import { Renderer3D, renderHeroPortraits } from "./render3d";
 
 /**
  * URL options:
@@ -61,6 +62,36 @@ let mode: Mode = "menu";
 let game!: Game;
 let level = params.level ?? 1;
 let bankedGems = loadNumber("shadowHunter.gems");
+
+// ---- Characters bought in the shop ----
+function loadOwned(): Set<string> {
+  try {
+    const list = JSON.parse(localStorage.getItem("shadowHunter.owned") ?? "[]");
+    return new Set<string>(Array.isArray(list) ? list.filter((x) => typeof x === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+const owned = loadOwned();
+owned.add(DEFAULT_HERO.id);
+function loadSelected(): Hero {
+  try {
+    const h = heroById(localStorage.getItem("shadowHunter.hero"));
+    return owned.has(h.id) ? h : DEFAULT_HERO;
+  } catch {
+    return DEFAULT_HERO;
+  }
+}
+let hero = loadSelected();
+function saveShop(): void {
+  try {
+    localStorage.setItem("shadowHunter.owned", JSON.stringify([...owned]));
+    localStorage.setItem("shadowHunter.hero", hero.id);
+    localStorage.setItem("shadowHunter.gems", String(bankedGems));
+  } catch {
+    /* storage unavailable: purchases last until the app closes */
+  }
+}
 let shownAlive = -1;
 
 function makeGame(lv: number): Game {
@@ -69,6 +100,7 @@ function makeGame(lv: number): Game {
     guards: params.crowd ?? guardsForLevel(lv),
     autopilot: params.bench > 0,
     invulnerable: params.bench > 0,
+    hero: params.bench > 0 ? DEFAULT_HERO : hero,
   });
 }
 
@@ -124,6 +156,96 @@ $("continueBtn").addEventListener("click", () => {
   sound.play("click");
   startLevel(Math.max(1, loadNumber("shadowHunter.level")));
 });
+// ---- Shop ----
+let portraits: string[] | null = null;
+
+function renderShop(): void {
+  $("shopGems").textContent = `◆ ${bankedGems}`;
+  // Portraits need WebGL, so render them the first time the shop opens rather than at startup.
+  portraits ??= renderHeroPortraits(HEROES);
+  const list = $("shopList");
+  list.textContent = "";
+  HEROES.forEach((h, i) => {
+    const card = document.createElement("div");
+    card.className = "hero" + (h === hero ? " selected" : "");
+    const img = document.createElement("img");
+    img.className = "pic";
+    img.alt = h.name;
+    img.src = portraits![i];
+    const info = document.createElement("div");
+    const name = document.createElement("h3");
+    name.textContent = h.name;
+    const blurb = document.createElement("div");
+    blurb.className = "blurb";
+    blurb.textContent = h.blurb;
+    const bars = document.createElement("div");
+    bars.className = "bars";
+    for (const b of heroBars(h)) {
+      const label = document.createElement("span");
+      label.textContent = b.label;
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      const fill = document.createElement("i");
+      fill.style.width = `${Math.round(b.value * 100)}%`;
+      bar.appendChild(fill);
+      bars.append(label, bar);
+    }
+    const btn = document.createElement("button");
+    if (h === hero) {
+      btn.className = "using";
+      btn.textContent = "IN USE ✓";
+    } else if (owned.has(h.id)) {
+      btn.className = "pick";
+      btn.textContent = "SELECT";
+      btn.onclick = () => {
+        sound.play("click");
+        selectHero(h);
+      };
+    } else {
+      const short = h.price - bankedGems;
+      btn.className = "buy" + (short > 0 ? " short" : "");
+      btn.textContent = short > 0 ? `◆ ${h.price} · need ${short} more` : `BUY ◆ ${h.price}`;
+      btn.onclick = () => {
+        if (bankedGems < h.price) {
+          sound.play("deny");
+          btn.classList.remove("shake");
+          void btn.offsetWidth;
+          btn.classList.add("shake");
+          return;
+        }
+        bankedGems -= h.price;
+        owned.add(h.id);
+        sound.play("buy");
+        selectHero(h);
+      };
+    }
+    info.append(name, blurb, bars, btn);
+    card.append(img, info);
+    list.appendChild(card);
+  });
+}
+
+function selectHero(h: Hero): void {
+  hero = h;
+  saveShop();
+  // Show the new character behind the menu straight away.
+  if (mode === "menu") game = makeGame(game.opts.level);
+  renderShop();
+}
+
+function openShop(): void {
+  sound.unlock();
+  sound.play("click");
+  renderShop();
+  $("shop").classList.add("show");
+}
+$("shopOpen").addEventListener("click", openShop);
+$("endShopBtn").addEventListener("click", openShop);
+$("shopBack").addEventListener("click", () => {
+  sound.play("click");
+  $("shop").classList.remove("show");
+});
+
 $("menuBtn").addEventListener("click", () => {
   sound.play("click");
   showMenu();
@@ -311,6 +433,7 @@ function frame(now: number): void {
   for (const e of game.events) sound.play(e);
   game.events.length = 0;
   const t1 = performance.now();
+  renderer.setHero(game.opts.hero);
   const rays = game.guards.length > 200 ? 8 : game.guards.length > 60 ? 14 : 24;
   renderer.render(game, rays, mode === "menu" ? 0 : dt);
   const t2 = performance.now();

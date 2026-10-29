@@ -1,8 +1,8 @@
+import type { Hero } from "./heroes";
 import { Grid, TILE, Vec, generateMap, mulberry32 } from "./map";
 
 export const PLAYER_RADIUS = 10;
 export const GUARD_RADIUS = 11;
-const KILL_RANGE = TILE * 0.9;
 const BULLET_SPEED = 560;
 const BULLET_DAMAGE = 25;
 
@@ -30,6 +30,7 @@ export interface Player {
   y: number;
   angle: number;
   hp: number;
+  maxHp: number;
   path: Vec[];
   lungeT: number;
   hurtT: number;
@@ -79,6 +80,7 @@ export interface GameOptions {
   guards: number;
   autopilot: boolean;
   invulnerable: boolean;
+  hero: Hero;
 }
 
 export class Game {
@@ -104,7 +106,7 @@ export class Game {
   readonly halfFov = 0.62;
   readonly patrolSpeed: number;
   readonly alertSpeed: number;
-  readonly playerSpeed = 165;
+  readonly playerSpeed: number;
   readonly fireInterval: number;
   private rng: () => number;
 
@@ -114,10 +116,11 @@ export class Game {
     this.patrolSpeed = Math.min(55 + lv * 3, 95);
     this.alertSpeed = Math.min(95 + lv * 3, 140);
     this.fireInterval = Math.max(0.65 - lv * 0.02, 0.35);
+    this.playerSpeed = opts.hero.speed;
     this.rng = mulberry32(lv * 104729 + opts.guards);
     const { grid, spawn } = generateMap(lv, opts.guards);
     this.grid = grid;
-    this.player = { x: spawn.x, y: spawn.y, angle: -Math.PI / 2, hp: 100, path: [], lungeT: 0, hurtT: 0, repathT: 0, stride: 0 };
+    this.player = { x: spawn.x, y: spawn.y, angle: -Math.PI / 2, hp: opts.hero.maxHp, maxHp: opts.hero.maxHp, path: [], lungeT: 0, hurtT: 0, repathT: 0, stride: 0 };
     this.spawnGuards();
   }
 
@@ -256,7 +259,8 @@ export class Game {
     const dx = target.x - g.x;
     const dy = target.y - g.y;
     const d = Math.hypot(dx, dy);
-    if (d > this.visionRange) return false;
+    // The hero's stealth shortens how far guards can spot them (the drawn cone stays the same).
+    if (d > this.visionRange * this.opts.hero.stealth) return false;
     if (Math.abs(angleDiff(Math.atan2(dy, dx), g.angle)) > this.halfFov) return false;
     return this.grid.castRay(g.x, g.y, dx / d, dy / d, d) >= d - 1;
   }
@@ -375,7 +379,7 @@ export class Game {
     const p = this.player;
     for (const g of this.guards) {
       if (g.state === "dead") continue;
-      if (Math.hypot(g.x - p.x, g.y - p.y) > KILL_RANGE) continue;
+      if (Math.hypot(g.x - p.x, g.y - p.y) > this.opts.hero.killRange) continue;
       g.state = "dead";
       g.deadT = 0;
       g.path = [];
