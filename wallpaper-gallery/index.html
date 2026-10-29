@@ -129,11 +129,6 @@ main.wrap{padding-block:16px 48px}
 .fl{display:grid;gap:6px;font-size:13px;font-weight:600}
 .fl input[type="text"],.fl input[type="number"],.fl select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--fg);font:inherit;font-size:15px;font-weight:500;width:100%}
 .fl input:focus-visible,.fl select:focus-visible,.sortsel:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.drop{border:1.5px dashed var(--line);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer;background:var(--surface)}
-.drop:hover,.drop:focus-within{border-color:var(--accent)}
-.drop img{width:64px;aspect-ratio:9/19.5;object-fit:cover;border-radius:8px;flex:none}
-.drop-t{min-width:0;font-size:13px;color:var(--muted)}
-.drop-t b{display:block;color:var(--fg);font-size:14px}
 .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);font-weight:500}
 .check input{margin-top:3px;accent-color:var(--accent)}
@@ -231,18 +226,15 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
     <div class="section-h"><div><h2 class="h">Sell your wallpapers</h2><p class="sub" id="rateLine"></p></div></div>
     <p class="note" id="upGate" hidden></p>
     <form class="form" id="upForm" novalidate>
-      <label class="drop" for="upFile">
-        <img id="upPrev" alt="" hidden>
-        <span class="drop-t"><b id="upFileT">Choose an image</b><span id="upFileS">PNG, JPG or WebP, up to 20 MB. The short side must be at least 1080 px.</span></span>
-        <input class="vh" type="file" id="upFile" accept="image/png,image/jpeg,image/webp">
-      </label>
-      <label class="fl" for="upTitle">Title<input type="text" id="upTitle" maxlength="40" placeholder="e.g. Monsoon Over Araku" autocomplete="off"></label>
-      <label class="fl" for="upCat">Category<select id="upCat"></select></label>
       <label class="fl" for="upPrice">Price<select id="upPrice"></select></label>
       <p class="sub" id="upShare" style="margin-top:-8px"></p>
-      <label class="check" for="upRights"><input type="checkbox" id="upRights"><span>I made this image or own the rights to share it. Copied or copyrighted images are removed and earn nothing.</span></label>
-      <p class="err" id="upErr" hidden></p>
+      <label class="fl" for="upCat">Category<select id="upCat"></select></label>
+      <label class="fl" for="upTitle">Title (optional)<input type="text" id="upTitle" maxlength="40" placeholder="Uses the photo’s file name if left empty" autocomplete="off"></label>
+      <label class="check" for="upRights"><input type="checkbox" id="upRights"><span>I made these images or own the rights to share them. Copied or copyrighted images are removed and earn nothing.</span></label>
+      <input class="vh" type="file" id="upFile" accept="image/png,image/jpeg,image/webp" tabindex="-1" aria-hidden="true">
       <div><button class="btn primary" type="submit" id="upBtn">Upload wallpaper</button></div>
+      <p class="sub" id="upHint" style="margin-top:-6px">Tap Upload, pick a photo and it goes live. PNG, JPG or WebP, up to 20 MB, at least 1080 px on the short side.</p>
+      <p class="err" id="upErr" hidden></p>
     </form>
   </section>
 
@@ -839,8 +831,6 @@ $('buyBody').addEventListener('submit',async e=>{if(e.target.id!=='buyForm')retu
   catch(err){berr('Your order didn’t go through. Try again.')}});
 
 /* upload */
-const UP_HINT='PNG, JPG or WebP, up to 20 MB. The short side must be at least 1080 px.';
-let upFile=null,upDims=null;
 function renderUploadGate(){const g=$('upGate');let msg='';const pct=commissionPct();
   $('rateLine').textContent=`Free wallpapers help people find you. Paid ones sell through the app: you keep ${100-pct}% of every sale and the app keeps ${pct}%. Request a payout to your UPI ID once you reach ${inr(MIN_PAYOUT)}.`;
   const p=+$('upPrice').value||0;
@@ -849,19 +839,10 @@ function renderUploadGate(){const g=$('upGate');let msg='';const pct=commissionP
   else if(comState==='ready'&&(!assets||!me))msg='<b>Uploading needs Contributor access.</b> Ask the owner of this page to share it with you as a Contributor, then reload.';
   g.innerHTML=msg;g.hidden=!msg;$('upBtn').disabled=!!msg||comState!=='ready'}
 $('upPrice').addEventListener('change',renderUploadGate);
-function resetUploadFile(){upFile=null;upDims=null;const pv=$('upPrev');if(pv.src.startsWith('blob:'))URL.revokeObjectURL(pv.src);pv.removeAttribute('src');pv.hidden=true;
-  $('upFileT').textContent='Choose an image';$('upFileS').textContent=UP_HINT}
-$('upFile').addEventListener('change',async()=>{const f=$('upFile').files[0];resetUploadFile();$('upErr').hidden=true;if(!f)return;
-  const err=m=>{$('upErr').textContent=m;$('upErr').hidden=false};
-  if(!['image/png','image/jpeg','image/webp'].includes(f.type))return err('That file type isn’t supported. Choose a PNG, JPG or WebP image.');
-  if(f.size>20*1048576)return err('That image is over 20 MB. Export a smaller file and try again.');
-  const url=URL.createObjectURL(f),img=new Image();
-  try{await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=url})}catch(e){URL.revokeObjectURL(url);return err('That image couldn’t be read. Try a different file.')}
-  const w=img.naturalWidth,h=img.naturalHeight;
-  if(Math.min(w,h)<1080){URL.revokeObjectURL(url);return err(`This image is ${w} × ${h}. Wallpapers need at least 1080 px on the short side.`)}
-  upFile=f;upDims=[w,h];const pv=$('upPrev');pv.src=url;pv.hidden=false;
-  $('upFileT').textContent=f.name;$('upFileS').textContent=`${w} × ${h} · ${(f.size/1048576).toFixed(1)} MB`;
-  if(!$('upTitle').value.trim())$('upTitle').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,40)});
+try{$('upRights').checked=localStorage.getItem('glowwall-rights')==='1'}catch(e){}
+$('upRights').addEventListener('change',()=>{try{localStorage.setItem('glowwall-rights',$('upRights').checked?'1':'0')}catch(e){}});
+function readDims(f){return new Promise((ok,no)=>{const url=URL.createObjectURL(f),img=new Image();
+  img.onload=()=>{URL.revokeObjectURL(url);ok([img.naturalWidth,img.naturalHeight])};img.onerror=()=>{URL.revokeObjectURL(url);no(new Error('read'))};img.src=url})}
 async function makePreview(file,w,h){const src=URL.createObjectURL(file),img=new Image();
   await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=src});
   const s=Math.min(1,900/Math.max(w,h)),W=Math.round(w*s),H=Math.round(h*s),c=document.createElement('canvas');c.width=W;c.height=H;
@@ -871,23 +852,30 @@ async function makePreview(file,w,h){const src=URL.createObjectURL(file),img=new
   for(let i=-8;i<=8;i++){const y=i*W*.2;x.strokeText('GLOWWALL PREVIEW',0,y);x.fillText('GLOWWALL PREVIEW',0,y)}
   x.restore();
   return new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('preview')),'image/jpeg',.82))}
-$('upForm').addEventListener('submit',async e=>{e.preventDefault();const err=m=>{$('upErr').textContent=m;$('upErr').hidden=false};$('upErr').hidden=true;
-  if(!assets||!db||!me)return err('Uploading needs Contributor access to this page.');
-  if(!upFile)return err('Choose an image first.');
-  const title=$('upTitle').value.trim();if(!title)return err('Give your wallpaper a title.');
-  if(!$('upRights').checked)return err('Confirm that you own the rights to this image.');
+const upErr=m=>{$('upErr').textContent=m;$('upErr').hidden=!m};
+// Upload opens the photo picker straight away; picking a photo uploads it.
+$('upForm').addEventListener('submit',e=>{e.preventDefault();upErr('');
+  if(!assets||!db||!me)return upErr('Uploading needs Contributor access to this page.');
+  if(!$('upRights').checked)return upErr('Tick the box to confirm you own the rights, then tap Upload again.');
+  $('upFile').value='';$('upFile').click()});
+$('upFile').addEventListener('change',async()=>{const f=$('upFile').files[0];if(!f)return;
+  if(!['image/png','image/jpeg','image/webp'].includes(f.type))return upErr('That file type isn’t supported. Pick a PNG, JPG or WebP photo.');
+  if(f.size>20*1048576)return upErr('That photo is over 20 MB. Pick a smaller one.');
+  let dims;try{dims=await readDims(f)}catch(e){return upErr('That photo couldn’t be read. Pick a different one.')}
+  if(Math.min(dims[0],dims[1])<1080)return upErr(`This photo is ${dims[0]} × ${dims[1]}. Wallpapers need at least 1080 px on the short side.`);
+  const title=$('upTitle').value.trim()||f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').trim().slice(0,40)||'Untitled';
   const price=+$('upPrice').value||0,btn=$('upBtn');btn.disabled=true;btn.textContent='Uploading…';
-  try{const full=await assets.upload(upFile);
-    const wall={id:newId(),title,cat:$('upCat').value,w:upDims[0],h:upDims[1],at:Date.now(),price};
-    if(price){const prev=await assets.upload(await makePreview(upFile,upDims[0],upDims[1]),{contentType:'image/jpeg'});wall.preview=prev.id;
+  try{const full=await assets.upload(f);
+    const wall={id:newId(),title,cat:$('upCat').value,w:dims[0],h:dims[1],at:Date.now(),price};
+    if(price){const prev=await assets.upload(await makePreview(f,dims[0],dims[1]),{contentType:'image/jpeg'});wall.preview=prev.id;
       // The full file's id stays in the creator's vault, readable only by them and the owner, until someone buys it.
       await enqueue('vault/'+me,()=>{const v=myVault||{};return db.doc('vault/'+me).set({walls:{...(v.walls||{}),[wall.id]:full.id}})})}
     else wall.asset=full.id;
     await enqueue('creators/'+me,()=>{const c=creators[me]||{};return db.doc('creators/'+me).set({...c,walls:[wall,...(c.walls||[])],updatedAt:Date.now()})});
-    $('upForm').reset();resetUploadFile();toast(price?`Uploaded for ${rs(price)}. It’s on sale in Community now.`:'Uploaded. It’s live in Community now.');showView('community')}
-  catch(e){const m={too_large:'That image is too large. Keep it under 20 MB.',unsupported_type:'That file type isn’t supported. Use PNG, JPG or WebP.',
+    $('upTitle').value='';toast(price?`“${title}” is on sale for ${rs(price)} in Community.`:`“${title}” is live in Community.`);showView('community')}
+  catch(e){const m={too_large:'That photo is too large. Keep it under 20 MB.',unsupported_type:'That file type isn’t supported. Use PNG, JPG or WebP.',
       quota_or_state:'Storage for this app is full right now. Ask the owner to free up space.',rate_limited:'Too many uploads in a row. Wait a minute and try again.'}[e&&e.code];
-    err(m||'The upload didn’t go through. Check your connection and try again.')}
+    upErr(m||'The upload didn’t go through. Check your connection and try again.')}
   finally{btn.textContent='Upload wallpaper';renderUploadGate()}});
 
 /* purchases */
