@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jarvis">
+<meta name="theme-color" content="#04080c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>Jarvis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: HUD console. Landscape iPad = status rail | reactor + reply | log. Portrait/phone = stacked. Single deliberate dark look. */
+:root {
+  --bg: #04080c;
+  --panel: #08121a;
+  --line: #12303d;
+  --fg: #d6f1fb;
+  --dim: #6a8a98;
+  --cyan: #5cdcff;
+  --cyan-soft: rgba(92, 220, 255, 0.14);
+  --amber: #ffb547;
+  --red: #ff6b6b;
+  --display: "Chakra Petch", "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", -apple-system, "Helvetica Neue", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+.app {
+  box-sizing: border-box;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 380px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "top top top" "rail core log" "dock dock dock";
+  gap: 14px 18px;
+  padding-block: max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(92, 220, 255, 0.07), transparent 60%),
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(92, 220, 255, 0.025) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(92, 220, 255, 0.025) 39px 40px);
+}
+.label {
+  font: 600 11px/1 var(--display);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* Top bar */
+.top { grid-area: top; display: flex; align-items: center; gap: 14px; }
+.brand { font: 600 20px/1 var(--display); letter-spacing: 0.32em; color: var(--cyan); }
+.brand small { font-size: 11px; letter-spacing: 0.2em; color: var(--dim); margin-left: 10px; }
+.top .spacer { flex: 1; }
+.chip {
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+.chip[data-state="ok"] { color: var(--cyan); border-color: rgba(92, 220, 255, 0.4); }
+.chip[data-state="warn"] { color: var(--amber); border-color: rgba(255, 181, 71, 0.4); }
+.iconbtn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  cursor: pointer;
+}
+.iconbtn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.iconbtn svg { width: 20px; height: 20px; }
+
+/* Status rail */
+.rail { grid-area: rail; display: flex; flex-direction: column; gap: 18px; min-height: 0; overflow-y: auto; }
+.block { display: flex; flex-direction: column; gap: 8px; }
+.clock { font: 600 46px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.clock .sec { font-size: 20px; color: var(--dim); margin-left: 4px; }
+.date { font: 400 13px/1.3 var(--mono); color: var(--dim); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+}
+.list li .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.list li .t { font: 500 14px/1 var(--mono); color: var(--amber); font-variant-numeric: tabular-nums; }
+.list li button { appearance: none; border: 0; background: transparent; color: var(--dim); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+.empty { font-size: 13px; color: var(--dim); }
+
+/* Core */
+.core { grid-area: core; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 0; min-width: 0; }
+.reactor { position: relative; width: min(46vh, 100%, 420px); aspect-ratio: 1; max-width: 100%; }
+.reactor canvas { width: 100%; height: 100%; display: block; }
+.reactor .state {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font: 600 12px/1 var(--display); letter-spacing: 0.3em; text-transform: uppercase; color: var(--bg);
+  pointer-events: none;
+}
+.reply {
+  max-width: 62ch; width: 100%;
+  text-align: center;
+  font: 400 18px/1.5 var(--body);
+  text-wrap: balance;
+  min-height: 3em;
+  max-height: 30vh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.reply.thinking { color: var(--dim); font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em; }
+
+/* Log */
+.log { grid-area: log; display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+.log .stream {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.msg { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.msg .who { font: 500 10px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.msg .text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; }
+.msg.you .text { color: var(--fg); }
+.msg.jarvis .who { color: var(--cyan); }
+.msg.sys .text { color: var(--dim); font-family: var(--mono); font-size: 12px; }
+.msg.err .text { color: var(--red); }
+
+/* Dock */
+.dock { grid-area: dock; display: flex; gap: 10px; align-items: center; }
+.field {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 0 6px 0 16px;
+  height: 56px;
+}
+.field input {
+  flex: 1; min-width: 0;
+  background: transparent; border: 0; outline: none;
+  color: var(--fg);
+  font: 400 17px var(--body);
+}
+.field input::placeholder { color: var(--dim); }
+.send { appearance: none; border: 0; background: transparent; color: var(--cyan); font: 600 13px var(--display); letter-spacing: 0.2em; padding: 10px 12px; cursor: pointer; }
+.send:disabled { color: var(--dim); }
+.mic {
+  appearance: none;
+  width: 56px; height: 56px; flex: none;
+  border-radius: 50%;
+  border: 1px solid rgba(92, 220, 255, 0.5);
+  background: var(--cyan-soft);
+  color: var(--cyan);
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s;
+}
+.mic svg { width: 24px; height: 24px; }
+.mic.on { background: var(--cyan); color: var(--bg); box-shadow: 0 0 0 6px rgba(92, 220, 255, 0.15), 0 0 30px rgba(92, 220, 255, 0.5); }
+.mic:active { transform: scale(0.94); }
+.stop { border-color: rgba(255, 107, 107, 0.5); color: var(--red); }
+
+/* Settings sheet */
+.sheet {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(2, 5, 8, 0.72);
+  display: grid; place-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
+}
+.sheet .card {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.sheet h2 { margin: 0; font: 600 18px/1.2 var(--display); letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); }
+.row { display: flex; flex-direction: column; gap: 6px; }
+.row.inline { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.row label { font-size: 14px; }
+.row .hint { font-size: 12px; color: var(--dim); }
+.sheet input[type="text"], .sheet input[type="password"], .sheet select {
+  background: var(--bg); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; font: 400 15px var(--body);
+  width: 100%; box-sizing: border-box;
+}
+.sheet input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--cyan); flex: none; }
+.btnrow { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  appearance: none; cursor: pointer;
+  border: 1px solid var(--line); background: transparent; color: var(--fg);
+  border-radius: 10px; padding: 10px 14px; font: 500 14px var(--body);
+}
+.btn.primary { background: var(--cyan); border-color: var(--cyan); color: var(--bg); }
+.btn.danger { color: var(--red); border-color: rgba(255, 107, 107, 0.4); }
+
+@media (max-width: 1000px), (orientation: portrait) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 0.8fr) auto;
+    grid-template-areas: "top" "rail" "core" "log" "dock";
+  }
+  .rail { flex-direction: row; flex-wrap: wrap; gap: 12px 24px; overflow: visible; }
+  .rail .block.clockblock { flex-direction: row; align-items: baseline; gap: 12px; }
+  .clock { font-size: 32px; }
+  .rail .block.timers, .rail .block.memory { display: none; }
+  .rail.has-timers .block.timers { display: flex; flex: 1; min-width: 200px; }
+  .reactor { width: min(32vh, 100%, 360px); }
+  .reply { font-size: 17px; max-height: 18vh; }
+}
+@media (max-width: 520px) {
+  .brand small { display: none; }
+  .chip#brainChip { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mic { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">J.A.R.V.I.S.<small>iPad edition</small></div>
+    <div class="spacer"></div>
+    <span class="chip" id="brainChip" data-state="warn">Connecting</span>
+    <button class="iconbtn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+
+  <aside class="rail" id="rail">
+    <div class="block clockblock">
+      <div class="clock" id="clock">--:--<span class="sec">--</span></div>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="block timers">
+      <div class="label">Timers</div>
+      <ul class="list" id="timerList"></ul>
+    </div>
+    <div class="block memory">
+      <div class="label">Memory</div>
+      <ul class="list" id="memoryList"></ul>
+    </div>
+  </aside>
+
+  <main class="core">
+    <div class="reactor">
+      <canvas id="reactor" aria-hidden="true"></canvas>
+      <div class="state" id="stateLabel">Standby</div>
+    </div>
+    <div class="reply" id="reply" aria-live="polite"></div>
+  </main>
+
+  <section class="log" aria-label="Conversation">
+    <div class="label">Log</div>
+    <div class="stream" id="stream"></div>
+  </section>
+
+  <form class="dock" id="dock" autocomplete="off">
+    <button type="button" class="mic" id="micBtn" aria-label="Talk to Jarvis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </button>
+    <div class="field">
+      <input id="prompt" type="text" placeholder="Ask Jarvis anything" enterkeyhint="send" autocapitalize="sentences">
+      <button class="send" id="sendBtn" type="submit">SEND</button>
+    </div>
+  </form>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <h2 id="sheetTitle">Settings</h2>
+    <div class="row">
+      <label for="setName">What should Jarvis call you?</label>
+      <input type="text" id="setName" placeholder="Your name, or leave blank">
+    </div>
+    <div class="row">
+      <label for="setVoice">Voice</label>
+      <select id="setVoice"></select>
+      <span class="hint">British voices such as Daniel or Arthur sound most like the films. Add more in iPad Settings, Accessibility, Spoken Content, Voices.</span>
+    </div>
+    <div class="row inline">
+      <label for="setSpeak">Speak replies out loud</label>
+      <input type="checkbox" id="setSpeak">
+    </div>
+    <div class="row inline">
+      <label for="setHands">Conversation mode<br><span class="hint">Listens again after each reply</span></label>
+      <input type="checkbox" id="setHands">
+    </div>
+    <div class="row">
+      <label for="setDepth">Thinking</label>
+      <select id="setDepth">
+        <option value="quick">Fast replies</option>
+        <option value="default">Smarter, slower</option>
+      </select>
+    </div>
+    <div class="row" id="keyRow">
+      <label for="setKey">Anthropic API key</label>
+      <input type="password" id="setKey" placeholder="sk-ant-...">
+      <span class="hint">Needed only when Jarvis runs outside Claude, such as from your Home Screen. The key stays on this iPad and is sent only to api.anthropic.com.</span>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary" id="saveBtn" type="button">Save</button>
+      <button class="btn" id="clearChatBtn" type="button">New conversation</button>
+      <button class="btn danger" id="clearMemBtn" type="button">Erase memory</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  /* ---------- persistence (per device) ---------- */
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("jarvis." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("jarvis." + k, JSON.stringify(v)); } catch {} },
+  };
+  const settings = Object.assign(
+    { name: "", voice: "", speak: true, hands: false, depth: "quick", apiKey: "" },
+    store.get("settings", {})
+  );
+  let memory = store.get("memory", []);           // [{text, at}]
+  let timers = [];                                // [{id, label, ends}]
+  let turns = [];                                 // claude.ai mode: [{role, content}]
+  let apiHistory = [];                            // API mode: full message objects
+  let timerSeq = 1;
+
+  /* ---------- brain: claude.ai sample capability, else direct API ---------- */
+  let sample = null;
+  let brain = "none";
+  const chip = $("brainChip");
+  function setBrain(kind) {
+    brain = kind;
+    if (kind === "claude") { chip.textContent = "Online · Claude"; chip.dataset.state = "ok"; }
+    else if (kind === "api") { chip.textContent = "Online · API"; chip.dataset.state = "ok"; }
+    else { chip.textContent = "Offline · add key"; chip.dataset.state = "warn"; }
+    $("keyRow").hidden = kind === "claude";
+  }
+  function refreshBrain() { setBrain(sample ? "claude" : settings.apiKey ? "api" : "none"); }
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("sample").then((s) => { sample = s; refreshBrain(); }).catch(() => refreshBrain());
+  } else {
+    refreshBrain();
+  }
+
+  /* ---------- clock ---------- */
+  function tick() {
+    const d = new Date();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    $("clock").innerHTML = hh + ":" + mm + '<span class="sec">' + ss + "</span>";
+    $("date").textContent = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    renderTimers();
+  }
+  setInterval(tick, 1000);
+
+  /* ---------- timers & memory ---------- */
+  function fmt(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(r).padStart(2, "0");
+  }
+  function renderTimers() {
+    const ul = $("timerList");
+    const now = Date.now();
+    ul.innerHTML = "";
+    if (!timers.length) { ul.innerHTML = '<li class="empty" style="border:0;background:none;padding:0">No timers running.</li>'; }
+    for (const t of timers) {
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="t"></span><span class="grow"></span><button aria-label="Cancel timer">×</button>';
+      li.querySelector(".t").textContent = fmt(t.ends - now);
+      li.querySelector(".grow").textContent = t.label;
+      li.querySelector("button").onclick = () => cancelTimer(t.id);
+      ul.appendChild(li);
+    }
+    $("rail").classList.toggle("has-timers", timers.length > 0);
+  }
+  function addTimer(seconds, label) {
+    const t = { id: timerSeq++, label: label || "Timer", ends: Date.now() + seconds * 1000 };
+    t.handle = setTimeout(() => timerDone(t), seconds * 1000);
+    timers.push(t);
+    renderTimers();
+    return t;
+  }
+  function cancelTimer(id) {
+    const t = timers.find((x) => x.id === id);
+    if (!t) return false;
+    clearTimeout(t.handle);
+    timers = timers.filter((x) => x.id !== id);
+    renderTimers();
+    return true;
+  }
+  function timerDone(t) {
+    timers = timers.filter((x) => x.id !== t.id);
+    renderTimers();
+    chime();
+    const line = (settings.name ? settings.name + ", y" : "Y") + "our " + t.label.toLowerCase() + " timer is done.";
+    log("jarvis", line);
+    showReply(line);
+    speak(line);
+  }
+  function renderMemory() {
+    const ul = $("memoryList");
+    ul.innerHTML = "";
+    if (!memory.length) { ul.innerHTML = '<li class="empty" style="border:0;background:none;padding:0">Say "remember that..." and I will keep it here.</li>'; return; }
+    memory.forEach((m, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = '<span class="grow"></span><button aria-label="Forget this">×</button>';
+      li.querySelector(".grow").textContent = m.text;
+      li.querySelector("button").onclick = () => { memory.splice(i, 1); store.set("memory", memory); renderMemory(); };
+      ul.appendChild(li);
+    });
+  }
+
+  /* ---------- tools Jarvis can use ---------- */
+  const tools = [
+    {
+      name: "get_datetime",
+      description: "Get the current local date, time and time zone on the user's iPad.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      execute() {
+        const d = new Date();
+        return { local: d.toLocaleString(undefined, { dateStyle: "full", timeStyle: "short" }), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, iso: d.toISOString() };
+      },
+    },
+    {
+      name: "set_timer",
+      description: "Start a countdown timer on the iPad. It chimes and announces itself when done.",
+      inputSchema: { type: "object", properties: { seconds: { type: "integer", minimum: 1, maximum: 86400 }, label: { type: "string", description: "Short name, e.g. Pasta" } }, required: ["seconds"], additionalProperties: false },
+      execute({ seconds, label }) {
+        const t = addTimer(Number(seconds), label);
+        return { id: t.id, label: t.label, ends_at: new Date(t.ends).toLocaleTimeString() };
+      },
+    },
+    {
+      name: "list_timers",
+      description: "List running timers with time remaining.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      execute() { return timers.map((t) => ({ id: t.id, label: t.label, remaining: fmt(t.ends - Date.now()) })); },
+    },
+    {
+      name: "cancel_timer",
+      description: "Cancel a running timer by id.",
+      inputSchema: { type: "object", properties: { id: { type: "integer" } }, required: ["id"], additionalProperties: false },
+      execute({ id }) { return { cancelled: cancelTimer(Number(id)) }; },
+    },
+    {
+      name: "remember",
+      description: "Save a fact or note about the user to long-term memory on this iPad.",
+      inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false },
+      execute({ text }) {
+        memory.push({ text: String(text).slice(0, 300), at: Date.now() });
+        memory = memory.slice(-50);
+        store.set("memory", memory);
+        renderMemory();
+        return { saved: true, count: memory.length };
+      },
+    },
+    {
+      name: "forget",
+      description: "Delete memory items whose text contains the given phrase.",
+      inputSchema: { type: "object", properties: { phrase: { type: "string" } }, required: ["phrase"], additionalProperties: false },
+      execute({ phrase }) {
+        const p = String(phrase).toLowerCase();
+        const before = memory.length;
+        memory = memory.filter((m) => !m.text.toLowerCase().includes(p));
+        store.set("memory", memory);
+        renderMemory();
+        return { removed: before - memory.length };
+      },
+    },
+  ];
+  async function runTool(name, input) {
+    const t = tools.find((x) => x.name === name);
+    if (!t) throw new Error("Unknown tool " + name);
+    log("sys", "› " + name.replace(/_/g, " "));
+    return t.execute(input || {});
+  }
+
+  function instructions() {
+    const who = settings.name ? "The user's name is " + settings.name + "; address them by it now and then." : "You don't know the user's name yet; if they tell you, save it with the remember tool.";
+    const mem = memory.length ? "\n\nThings you remember about the user:\n" + memory.map((m) => "- " + m.text).join("\n") : "";
+    return (
+      "You are J.A.R.V.I.S., a personal AI assistant running on the user's iPad, in the spirit of Tony Stark's butler AI: calm, capable, quietly witty, unfailingly loyal. " +
+      who +
+      "\nYour replies are usually read aloud by text-to-speech, so: answer in one to three short spoken sentences unless the user asks for detail; no markdown, bullet points, emoji, code blocks or URLs unless asked; spell out symbols as words. " +
+      "Use your tools for the time and date, timers, and remembering things. You cannot browse the web, control other apps, or see the screen; if asked, say so briefly and offer what you can do instead. " +
+      "When the user tells you something worth keeping (preferences, names, plans), save it with remember." +
+      mem
+    );
+  }
+
+  /* claude.ai: sample capability, memoryless so we send the rules + recent turns each time */
+  async function askClaude(text, onText, signal) {
+    turns.push({ role: "user", content: text });
+    const input = [{ role: "user", content: instructions() + "\n\n(Conversation follows.)" }, ...turns.slice(-24)];
+    if (input[1] && input[1].role === "assistant") input.splice(1, 1);
+    const res = await sample(input, {
+      tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema, execute: (inp) => runTool(name, inp) })),
+      modelTier: settings.depth === "default" ? "default" : "quick",
+      cache: false,
+      signal,
+      onText: ({ text }) => onText(text),
+    });
+    turns.push({ role: "assistant", content: res.text });
+    return res.text;
+  }
+
+  /* Home Screen / standalone: Messages API directly with the user's key */
+  async function askApi(text, onText, signal) {
+    const mark = apiHistory.length;
+    try { return await apiLoop(text, onText, signal); }
+    catch (e) { apiHistory.length = mark; throw e; }
+  }
+  async function apiLoop(text, onText, signal) {
+    apiHistory.push({ role: "user", content: text });
+    const apiTools = tools.map(({ name, description, inputSchema }) => ({ name, description, input_schema: inputSchema }));
+    for (let round = 0; round < 6; round++) {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        signal,
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": settings.apiKey,
+          "anthropic-version": "2026-10-21",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-opus-5-5",
+          max_tokens: 16000,
+          system: instructions(),
+          output_config: { effort: settings.depth === "default" ? "medium" : "low" },
+          tools: apiTools,
+          messages: apiHistory,
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = (data.error && data.error.message) || "HTTP " + r.status;
+        const err = new Error(r.status === 401 ? "That API key was rejected. Check it in Settings." : r.status === 429 ? "Rate limited by the API. Try again in a moment." : msg);
+        err.code = "api";
+        throw err;
+      }
+      apiHistory.push({ role: "assistant", content: data.content });
+      if (data.stop_reason === "refusal") return "I'm afraid I can't help with that one.";
+      const said = data.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
+      if (said) onText(said);
+      if (data.stop_reason !== "tool_use") return said;
+      const results = [];
+      for (const b of data.content) {
+        if (b.type !== "tool_use") continue;
+        try { results.push({ type: "tool_result", tool_use_id: b.id, content: JSON.stringify(await runTool(b.name, b.input)) }); }
+        catch (e) { results.push({ type: "tool_result", tool_use_id: b.id, content: String(e.message || e), is_error: true }); }
+      }
+      apiHistory.push({ role: "user", content: results });
+    }
+    return "I got a bit carried away there. Could you ask that again?";
+  }
+
+  /* ---------- conversation flow ---------- */
+  let busy = false;
+  let ctl = null;
+  function log(kind, text) {
+    const el = document.createElement("div");
+    el.className = "msg " + kind;
+    el.innerHTML = '<span class="who"></span><span class="text"></span>';
+    el.querySelector(".who").textContent = kind === "you" ? (settings.name || "You") : kind === "jarvis" ? "Jarvis" : kind === "err" ? "Alert" : "System";
+    el.querySelector(".text").textContent = text;
+    $("stream").appendChild(el);
+    $("stream").scrollTop = $("stream").scrollHeight;
+    return el.querySelector(".text");
+  }
+  function showReply(text, thinking) {
+    const r = $("reply");
+    r.textContent = text;
+    r.classList.toggle("thinking", !!thinking);
+  }
+  function setBusy(b) {
+    busy = b;
+    $("sendBtn").textContent = b ? "STOP" : "SEND";
+  }
+
+  async function ask(text) {
+    text = text.trim();
+    if (!text || busy) return;
+    unlockAudio();
+    if (brain === "none") {
+      log("you", text);
+      const line = "I need an Anthropic API key to think outside Claude. Open Settings to add one.";
+      log("err", line); showReply(line); setState("idle");
+      openSheet();
+      return;
+    }
+    stopSpeaking();
+    log("you", text);
+    setBusy(true);
+    setState("thinking");
+    showReply("Processing…", true);
+    let out = null;
+    ctl = new AbortController();
+    try {
+      const onText = (t) => {
+        if (!out) out = log("jarvis", "");
+        out.textContent = t;
+        showReply(t);
+        $("stream").scrollTop = $("stream").scrollHeight;
+      };
+      const final = brain === "claude" ? await askClaude(text, onText, ctl.signal) : await askApi(text, onText, ctl.signal);
+      onText(final);
+      setBusy(false);
+      speak(final, () => { if (settings.hands) listen(); });
+    } catch (e) {
+      setBusy(false);
+      setState("idle");
+      if (brain === "claude") turns.pop();
+      if (e && (e.code === "cancelled" || e.name === "AbortError")) { showReply(out ? out.textContent : ""); return; }
+      const msg = errorCopy(e);
+      log("err", msg);
+      showReply(msg);
+    }
+  }
+  function errorCopy(e) {
+    switch (e && e.code) {
+      case "not_granted": return "I need your permission to use Claude. Allow it when asked, or reload the page.";
+      case "rate_limited": return "I'm being rate limited. Give me a moment and try again.";
+      case "api": return e.message;
+      default: return (e && e.message) ? "Something went wrong: " + e.message : "Something went wrong. Please try again.";
+    }
+  }
+
+  $("dock").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    if (busy) { ctl && ctl.abort(); return; }
+    const v = $("prompt").value;
+    $("prompt").value = "";
+    ask(v);
+  });
+
+  /* ---------- voice out ---------- */
+  const synth = window.speechSynthesis;
+  let voices = [];
+  let speaking = false;
+  function loadVoices() {
+    if (!synth) return;
+    voices = synth.getVoices().filter((v) => /^en/i.test(v.lang));
+    const sel = $("setVoice");
+    sel.innerHTML = "";
+    const pick = bestVoice();
+    for (const v of voices) {
+      const o = document.createElement("option");
+      o.value = v.voiceURI; o.textContent = v.name + " (" + v.lang + ")";
+      if ((settings.voice && v.voiceURI === settings.voice) || (!settings.voice && pick && v.voiceURI === pick.voiceURI)) o.selected = true;
+      sel.appendChild(o);
+    }
+    if (!voices.length) sel.innerHTML = "<option>System default</option>";
+  }
+  function bestVoice() {
+    if (settings.voice) { const v = voices.find((x) => x.voiceURI === settings.voice); if (v) return v; }
+    const prefs = [/daniel/i, /arthur/i, /oliver/i, /george/i, /malcolm/i, /en-GB/i];
+    for (const p of prefs) { const v = voices.find((x) => p.test(x.name) || p.test(x.lang)); if (v) return v; }
+    return voices[0] || null;
+  }
+  if (synth) { loadVoices(); synth.addEventListener && synth.addEventListener("voiceschanged", loadVoices); }
+  let audioUnlocked = false;
+  function unlockAudio() {
+    if (audioUnlocked || !synth) return;
+    audioUnlocked = true;
+    try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; synth.speak(u); } catch {}
+  }
+  function speak(text, done) {
+    if (!settings.speak || !synth || !text) { setState("idle"); done && done(); return; }
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/[*_#`>]/g, ""));
+    const v = bestVoice();
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = 1.02; u.pitch = 0.92;
+    u.onstart = () => { speaking = true; setState("speaking"); };
+    u.onboundary = () => { pulse = 1; };
+    const end = () => { if (!speaking) return; speaking = false; setState("idle"); done && done(); };
+    u.onend = end; u.onerror = end;
+    speaking = true;
+    setState("speaking");
+    synth.speak(u);
+  }
+  function stopSpeaking() { if (synth && (synth.speaking || speaking)) { speaking = false; synth.cancel(); } }
+  function chime() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ac = new AC();
+      [880, 1320].forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = f; o.type = "sine";
+        g.gain.setValueAtTime(0.0001, ac.currentTime + i * 0.18);
+        g.gain.exponentialRampToValueAtTime(0.25, ac.currentTime + i * 0.18 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + i * 0.18 + 0.5);
+        o.connect(g).connect(ac.destination);
+        o.start(ac.currentTime + i * 0.18); o.stop(ac.currentTime + i * 0.18 + 0.55);
+      });
+    } catch {}
+  }
+
+  /* ---------- voice in ---------- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, listening = false, heard = "";
+  function listen() {
+    if (listening || busy) return;
+    if (!SR) { micFallback(); return; }
+    stopSpeaking();
+    rec = new SR();
+    rec.lang = navigator.language || "en-US";
+    rec.interimResults = true;
+    rec.continuous = false;
+    heard = "";
+    rec.onstart = () => { listening = true; $("micBtn").classList.add("on"); setState("listening"); showReply("Listening…", true); };
+    rec.onresult = (ev) => {
+      heard = Array.from(ev.results).map((r) => r[0].transcript).join("");
+      showReply(heard);
+      $("prompt").value = heard;
+    };
+    rec.onerror = (ev) => {
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") micFallback(true);
+      else if (ev.error !== "no-speech" && ev.error !== "aborted") log("sys", "Microphone: " + ev.error);
+    };
+    rec.onend = () => {
+      listening = false;
+      $("micBtn").classList.remove("on");
+      const said = heard.trim();
+      $("prompt").value = "";
+      if (said) ask(said);
+      else { setState("idle"); showReply(""); }
+    };
+    try { rec.start(); } catch { micFallback(); }
+  }
+  function micFallback(denied) {
+    listening = false;
+    $("micBtn").classList.remove("on");
+    setState("idle");
+    const line = denied
+      ? "I can't use the microphone here. Tap the text box and use the microphone key on the iPad keyboard to dictate."
+      : "Voice input isn't available in this browser. Tap the text box and use keyboard dictation instead.";
+    showReply(line);
+    $("prompt").focus();
+  }
+  $("micBtn").addEventListener("click", () => {
+    unlockAudio();
+    if (listening) { rec && rec.stop(); return; }
+    if (speaking) { stopSpeaking(); setState("idle"); }
+    listen();
+  });
+
+  /* ---------- reactor visual ---------- */
+  const cv = $("reactor");
+  const ctx = cv.getContext("2d");
+  let state = "idle", pulse = 0, energy = 0.2;
+  const stateNames = { idle: "Standby", listening: "Listening", thinking: "Thinking", speaking: "Speaking" };
+  function setState(s) { state = s; $("stateLabel").textContent = stateNames[s] || s; }
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function size() {
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.max(1, r.width * dpr); cv.height = Math.max(1, r.height * dpr);
+  }
+  window.addEventListener("resize", size);
+  size();
+  function draw(t) {
+    const w = cv.width, h = cv.height, cx = w / 2, cy = h / 2, R = Math.min(w, h) / 2;
+    const target = { idle: 0.2, listening: 0.7, thinking: 0.55, speaking: 0.85 }[state];
+    energy += (target - energy) * 0.06;
+    pulse *= 0.9;
+    const time = reduce ? 0 : t / 1000;
+    const amp = state === "speaking" ? 0.5 + 0.5 * Math.sin(time * 9) * Math.sin(time * 3.3) + pulse * 0.6 : state === "listening" ? 0.5 + 0.5 * Math.sin(time * 4) : 0.3;
+    ctx.clearRect(0, 0, w, h);
+    ctx.lineCap = "round";
+    const cyan = (a) => "rgba(92,220,255," + a + ")";
+
+    // outer tick ring
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(time * 0.05);
+    for (let i = 0; i < 120; i++) {
+      const a = (i / 120) * Math.PI * 2;
+      const long = i % 10 === 0;
+      ctx.strokeStyle = cyan(long ? 0.6 : 0.22);
+      ctx.lineWidth = R * (long ? 0.008 : 0.005);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * R * 0.94, Math.sin(a) * R * 0.94);
+      ctx.lineTo(Math.cos(a) * R * (long ? 0.86 : 0.9), Math.sin(a) * R * (long ? 0.86 : 0.9));
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // segmented arcs, counter-rotating
+    const rings = [
+      { r: 0.78, segs: 3, gap: 0.5, w: 0.025, speed: 0.25 * (1 + energy * 2), a: 0.75 },
+      { r: 0.68, segs: 8, gap: 0.3, w: 0.012, speed: -0.4 * (1 + energy * 3), a: 0.5 },
+      { r: 0.6, segs: 2, gap: 1.2, w: 0.04, speed: 0.6 * (1 + energy * 4), a: 0.35 + energy * 0.5 },
+    ];
+    for (const ring of rings) {
+      const step = (Math.PI * 2) / ring.segs;
+      ctx.strokeStyle = cyan(ring.a);
+      ctx.lineWidth = R * ring.w;
+      for (let i = 0; i < ring.segs; i++) {
+        const s = i * step + time * ring.speed;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R * ring.r, s, s + step - ring.gap);
+        ctx.stroke();
+      }
+    }
+
+    // thinking sweep
+    if (state === "thinking") {
+      const s = time * 3;
+      ctx.strokeStyle = "rgba(255,181,71,0.85)";
+      ctx.lineWidth = R * 0.02;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.52, s, s + 0.9); ctx.stroke();
+    }
+
+    // core glow
+    const coreR = R * (0.3 + 0.07 * amp * energy);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 1.8);
+    g.addColorStop(0, "rgba(220,250,255,0.95)");
+    g.addColorStop(0.25, cyan(0.75));
+    g.addColorStop(0.6, cyan(0.18 + 0.2 * energy));
+    g.addColorStop(1, cyan(0));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, coreR * 1.8, 0, Math.PI * 2); ctx.fill();
+
+    // triangular reactor struts
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-time * 0.15);
+    ctx.strokeStyle = cyan(0.55); ctx.lineWidth = R * 0.01;
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * coreR * 0.5, Math.sin(a) * coreR * 0.5);
+      ctx.lineTo(Math.cos(a) * R * 0.46, Math.sin(a) * R * 0.46);
+      ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(0, 0, R * 0.46, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+
+    // voice waveform ring
+    if (state === "speaking" || state === "listening") {
+      ctx.strokeStyle = cyan(0.8); ctx.lineWidth = R * 0.008;
+      ctx.beginPath();
+      for (let i = 0; i <= 180; i++) {
+        const a = (i / 180) * Math.PI * 2;
+        const n = Math.sin(a * 12 + time * 8) * Math.sin(a * 5 - time * 5);
+        const rr = R * (0.38 + 0.04 * amp * n);
+        const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  /* ---------- settings sheet ---------- */
+  function openSheet() {
+    $("setName").value = settings.name;
+    $("setSpeak").checked = settings.speak;
+    $("setHands").checked = settings.hands;
+    $("setDepth").value = settings.depth;
+    $("setKey").value = settings.apiKey;
+    loadVoices();
+    $("sheet").hidden = false;
+  }
+  function closeSheet() { $("sheet").hidden = true; }
+  $("settingsBtn").onclick = openSheet;
+  $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
+  $("saveBtn").onclick = () => {
+    settings.name = $("setName").value.trim();
+    settings.speak = $("setSpeak").checked;
+    settings.hands = $("setHands").checked;
+    settings.depth = $("setDepth").value;
+    settings.apiKey = $("setKey").value.trim();
+    const v = $("setVoice").value;
+    if (voices.some((x) => x.voiceURI === v)) settings.voice = v;
+    store.set("settings", settings);
+    refreshBrain();
+    closeSheet();
+    log("sys", "Settings saved.");
+  };
+  $("clearChatBtn").onclick = () => {
+    turns = []; apiHistory = [];
+    $("stream").innerHTML = "";
+    showReply("");
+    closeSheet();
+    greet();
+  };
+  $("clearMemBtn").onclick = () => {
+    memory = []; store.set("memory", memory); renderMemory();
+    log("sys", "Memory erased.");
+  };
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheet").hidden) closeSheet(); });
+
+  /* ---------- boot ---------- */
+  function greet() {
+    const h = new Date().getHours();
+    const part = h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    const line = part + (settings.name ? ", " + settings.name : "") + ". Jarvis online. Tap the microphone or type to begin.";
+    log("jarvis", line);
+    showReply(line);
+  }
+  renderMemory();
+  tick();
+  setState("idle");
+  greet();
+
+  if ("serviceWorker" in navigator && location.protocol === "https:" && !window.claude) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
