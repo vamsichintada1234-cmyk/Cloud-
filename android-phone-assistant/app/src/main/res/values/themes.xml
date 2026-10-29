@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.MyPhone" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#3D5AFE</item>
+        <item name="colorSecondary">#00BFA5</item>
+    </style>
+</resources>
