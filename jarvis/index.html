@@ -14,7 +14,7 @@
 <title>Jarvis</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Telugu:wght@400;600&display=swap">
 <style>
 /* Layout: HUD console. Landscape iPad = status rail | reactor + reply | log. Portrait/phone = stacked. Single deliberate dark look. */
 :root {
@@ -27,8 +27,8 @@
   --cyan-soft: rgba(92, 220, 255, 0.14);
   --amber: #ffb547;
   --red: #ff6b6b;
-  --display: "Chakra Petch", "Avenir Next Condensed", "Arial Narrow", sans-serif;
-  --body: "IBM Plex Sans", -apple-system, "Helvetica Neue", sans-serif;
+  --display: "Chakra Petch", "Noto Sans Telugu", "Avenir Next Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "Noto Sans Telugu", -apple-system, "Helvetica Neue", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: dark;
 }
@@ -325,13 +325,22 @@ body {
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <h2 id="sheetTitle">Settings</h2>
     <div class="row">
+      <label for="setLang">Language · భాష</label>
+      <select id="setLang">
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="tenglish">Tenglish (Telugu in English letters)</option>
+        <option value="en">English</option>
+      </select>
+      <span class="hint">Jarvis understands Telugu, Tenglish and English in any mode. This sets how it replies and listens.</span>
+    </div>
+    <div class="row">
       <label for="setName">What should Jarvis call you?</label>
       <input type="text" id="setName" placeholder="Your name, or leave blank">
     </div>
     <div class="row">
       <label for="setVoice">Voice</label>
       <select id="setVoice"></select>
-      <span class="hint">British voices such as Daniel or Arthur sound most like the films. Add more in iPad Settings, Accessibility, Spoken Content, Voices.</span>
+      <span class="hint" id="voiceHint">Add more voices in iPad Settings, Accessibility, Spoken Content, Voices.</span>
     </div>
     <div class="row inline">
       <label for="setSpeak">Speak replies out loud</label>
@@ -372,9 +381,54 @@ body {
     set(k, v) { try { localStorage.setItem("jarvis." + k, JSON.stringify(v)); } catch {} },
   };
   const settings = Object.assign(
-    { name: "", voice: "", speak: true, hands: false, depth: "quick", apiKey: "" },
+    { name: "", voices: {}, lang: "te", speak: true, hands: false, depth: "quick", apiKey: "" },
     store.get("settings", {})
   );
+  if (settings.voice) { settings.voices = Object.assign({ en: settings.voice }, settings.voices); delete settings.voice; }
+
+  /* ---------- languages ---------- */
+  const LANGS = {
+    te: { rec: "te-IN", voice: /^te/i, prefs: [/geeta/i, /te-IN/i] },
+    tenglish: { rec: "en-IN", voice: /^en/i, prefs: [/rishi/i, /veena/i, /en-IN/i, /daniel/i] },
+    en: { rec: navigator.language && /^en/i.test(navigator.language) ? navigator.language : "en-GB", voice: /^en/i, prefs: [/daniel/i, /arthur/i, /oliver/i, /george/i, /malcolm/i, /en-GB/i] },
+  };
+  const STRINGS = {
+    en: {
+      greet: (part, n) => part + (n ? ", " + n : "") + ". Jarvis online. Tap the microphone or type to begin.",
+      parts: ["Working late", "Good morning", "Good afternoon", "Good evening"],
+      timer: (n, l) => (n ? n + ", y" : "Y") + "our " + l.toLowerCase() + " timer is done.",
+      reminder: (n, l) => (n ? n + ", a" : "A") + " reminder: " + l + ".",
+      listening: "Listening…", thinking: "Processing…", placeholder: "Ask Jarvis anything",
+      noKey: "I need an Anthropic API key to think outside Claude. Open Settings to add one.",
+      micDenied: "I can't use the microphone here. Tap the text box and use the microphone key on the iPad keyboard to dictate.",
+      micNone: "Voice input isn't available in this browser. Tap the text box and use keyboard dictation instead.",
+    },
+    te: {
+      greet: (part, n) => part + (n ? ", " + n : "") + ". జార్విస్ సిద్ధంగా ఉంది. మైక్ నొక్కండి లేదా టైప్ చేయండి.",
+      parts: ["ఇంకా మేల్కొనే ఉన్నారా", "శుభోదయం", "నమస్కారం", "శుభ సాయంత్రం"],
+      timer: (n, l) => (n ? n + ", " : "") + "మీ " + l + " టైమర్ పూర్తయింది.",
+      reminder: (n, l) => (n ? n + ", " : "") + "గుర్తు చేస్తున్నాను: " + l + ".",
+      listening: "వింటున్నాను…", thinking: "ఆలోచిస్తున్నాను…", placeholder: "జార్విస్‌ని ఏదైనా అడగండి",
+      noKey: "Claude బయట పని చేయాలంటే నాకు Anthropic API key కావాలి. Settings లో add చేయండి.",
+      micDenied: "ఇక్కడ మైక్ వాడలేను. టెక్స్ట్ బాక్స్ నొక్కి, కీబోర్డ్‌లోని మైక్ బటన్‌తో మాట్లాడండి.",
+      micNone: "ఈ బ్రౌజర్‌లో వాయిస్ ఇన్‌పుట్ లేదు. టెక్స్ట్ బాక్స్ నొక్కి కీబోర్డ్ డిక్టేషన్ వాడండి.",
+    },
+    tenglish: {
+      greet: (part, n) => part + (n ? ", " + n : "") + ". Jarvis ready ga undi. Mic nokkandi leda type cheyandi.",
+      parts: ["Inka melukune unnara", "Good morning", "Namaskaram", "Good evening"],
+      timer: (n, l) => (n ? n + ", " : "") + "mee " + l + " timer aipoyindi.",
+      reminder: (n, l) => (n ? n + ", " : "") + "gurthu chestunna: " + l + ".",
+      listening: "Vintunnanu…", thinking: "Alochistunnanu…", placeholder: "Jarvis ni emaina adagandi",
+      noKey: "Claude bayata pani cheyalante naaku Anthropic API key kavali. Settings lo add cheyandi.",
+      micDenied: "Ikkada mic vaadalenu. Text box nokki, keyboard lo mic button tho matladandi.",
+      micNone: "Ee browser lo voice input ledu. Text box nokki keyboard dictation vaadandi.",
+    },
+  };
+  const T = () => STRINGS[settings.lang] || STRINGS.en;
+  function applyLang() {
+    document.documentElement.lang = settings.lang === "te" ? "te" : "en";
+    $("prompt").placeholder = T().placeholder;
+  }
   let memory = store.get("memory", []);           // [{text, at}]
   let tasks = store.get("tasks", []);             // [{id, text, done}]
   let timers = [];                                // [{id, label, ends, kind}]
@@ -477,9 +531,7 @@ body {
     saveTimers();
     renderTimers();
     chime();
-    const line = t.kind === "reminder"
-      ? (settings.name ? settings.name + ", a" : "A") + " reminder: " + t.label + "."
-      : (settings.name ? settings.name + ", y" : "Y") + "our " + t.label.toLowerCase() + " timer is done.";
+    const line = t.kind === "reminder" ? T().reminder(settings.name, t.label) : T().timer(settings.name, t.label);
     log("jarvis", line);
     showReply(line);
     speak(line);
@@ -665,13 +717,19 @@ body {
   }
 
   function instructions() {
+    const lang = {
+      te: "Always reply in Telugu written in Telugu script (తెలుగు లిపి), in natural everyday spoken Telugu as people talk in Andhra Pradesh and Telangana. Keep common English words (timer, phone, WiFi, app names) where Telugu speakers normally use them. Write numbers and times as Telugu words where natural, so the Telugu voice reads them well. ",
+      tenglish: "Always reply in Tenglish: Telugu written in English letters, mixed with English words the way people text, e.g. 'Sare, 10 minutes timer set chesanu.' ",
+      en: "Reply in English, with a light British butler manner. ",
+    }[settings.lang] || "";
     const who = settings.name ? "The user's name is " + settings.name + "; address them by it now and then." : "You don't know the user's name yet; if they tell you, save it with the remember tool.";
     const mem = memory.length ? "\n\nThings you remember about the user:\n" + memory.map((m) => "- " + m.text).join("\n") : "";
     return (
       "You are J.A.R.V.I.S., a personal AI assistant running on the user's iPad, in the spirit of Tony Stark's butler AI: calm, capable, quietly witty, unfailingly loyal. " +
       who +
+      "\nThe user may speak or type in Telugu script, Tenglish (Telugu in English letters, e.g. 'Mic on cheyyu' means 'turn on the mic'), or English; understand all of them. " + lang +
       "\nYour replies are usually read aloud by text-to-speech, so: answer in one to three short spoken sentences unless the user asks for detail; no markdown, bullet points, emoji, code blocks or URLs unless asked; spell out symbols as words. " +
-      "You get things done rather than explaining how. Use your tools: time and date, timers, reminders at a clock time, the to-do list, memory, " +
+      "Your saved tasks, reminders and memories should be written in the same language the user used. You get things done rather than explaining how. Use your tools: time and date, timers, reminders at a clock time, the to-do list, memory, " +
       (brain === "api" ? "web search for anything current (news, weather, scores, prices, facts you are unsure of), " : "") +
       "open_link to give the user a one-tap button for websites, searches, YouTube, directions, calls, texts, email and FaceTime, and run_shortcut to trigger their Siri Shortcuts for anything else on the iPad. " +
       "You cannot tap buttons, open apps, or send messages yourself: offer the button and tell the user to tap it. " +
@@ -779,7 +837,7 @@ body {
     unlockAudio();
     if (brain === "none") {
       log("you", text);
-      const line = "I need an Anthropic API key to think outside Claude. Open Settings to add one.";
+      const line = T().noKey;
       log("err", line); showReply(line); setState("idle");
       openSheet();
       return;
@@ -789,7 +847,7 @@ body {
     log("you", text);
     setBusy(true);
     setState("thinking");
-    showReply("Processing…", true);
+    showReply(T().thinking, true);
     let out = null;
     ctl = new AbortController();
     try {
@@ -834,27 +892,34 @@ body {
   const synth = window.speechSynthesis;
   let voices = [];
   let speaking = false;
-  function loadVoices() {
+  const voicesFor = (lang) => (synth ? synth.getVoices() : []).filter((v) => (LANGS[lang] || LANGS.en).voice.test(v.lang));
+  function loadVoices(lang = settings.lang) {
     if (!synth) return;
-    voices = synth.getVoices().filter((v) => /^en/i.test(v.lang));
+    voices = voicesFor(lang);
     const sel = $("setVoice");
     sel.innerHTML = "";
-    const pick = bestVoice();
+    const pick = bestVoice(lang);
     for (const v of voices) {
       const o = document.createElement("option");
       o.value = v.voiceURI; o.textContent = v.name + " (" + v.lang + ")";
-      if ((settings.voice && v.voiceURI === settings.voice) || (!settings.voice && pick && v.voiceURI === pick.voiceURI)) o.selected = true;
+      if (pick && v.voiceURI === pick.voiceURI) o.selected = true;
       sel.appendChild(o);
     }
-    if (!voices.length) sel.innerHTML = "<option>System default</option>";
+    if (!voices.length) sel.innerHTML = lang === "te" ? "<option>Telugu voice not installed</option>" : "<option>System default</option>";
+    $("voiceHint").textContent = !voices.length && lang === "te"
+      ? "To hear Telugu, install a Telugu voice: iPad Settings, Accessibility, Spoken Content, Voices, Telugu. Then reopen Jarvis."
+      : lang === "en" ? "British voices such as Daniel or Arthur sound most like the films. Add more in iPad Settings, Accessibility, Spoken Content, Voices."
+      : "Add more voices in iPad Settings, Accessibility, Spoken Content, Voices.";
   }
-  function bestVoice() {
-    if (settings.voice) { const v = voices.find((x) => x.voiceURI === settings.voice); if (v) return v; }
-    const prefs = [/daniel/i, /arthur/i, /oliver/i, /george/i, /malcolm/i, /en-GB/i];
-    for (const p of prefs) { const v = voices.find((x) => p.test(x.name) || p.test(x.lang)); if (v) return v; }
-    return voices[0] || null;
+  function bestVoice(lang = settings.lang) {
+    const list = voicesFor(lang);
+    const saved = settings.voices[lang];
+    if (saved) { const v = list.find((x) => x.voiceURI === saved); if (v) return v; }
+    for (const p of (LANGS[lang] || LANGS.en).prefs) { const v = list.find((x) => p.test(x.name) || p.test(x.lang)); if (v) return v; }
+    return list[0] || null;
   }
-  if (synth) { loadVoices(); synth.addEventListener && synth.addEventListener("voiceschanged", loadVoices); }
+  let warnedVoice = false;
+  if (synth) { loadVoices(); synth.addEventListener && synth.addEventListener("voiceschanged", () => loadVoices()); }
   let audioUnlocked = false;
   function unlockAudio() {
     if (audioUnlocked || !synth) return;
@@ -867,7 +932,11 @@ body {
     const u = new SpeechSynthesisUtterance(text.replace(/[*_#`>]/g, ""));
     const v = bestVoice();
     if (v) { u.voice = v; u.lang = v.lang; }
-    u.rate = 1.02; u.pitch = 0.92;
+    else {
+      u.lang = (LANGS[settings.lang] || LANGS.en).rec;   // let iPadOS pick an installed voice for this language
+      if (settings.lang === "te" && !warnedVoice) { warnedVoice = true; log("sys", "No Telugu voice found. Install one: iPad Settings, Accessibility, Spoken Content, Voices, Telugu."); }
+    }
+    u.rate = settings.lang === "en" ? 1.02 : 0.98; u.pitch = settings.lang === "en" ? 0.92 : 1;
     u.onstart = () => { speaking = true; setState("speaking"); };
     u.onboundary = () => { pulse = 1; };
     const end = () => { if (!speaking) return; speaking = false; setState("idle"); done && done(); };
@@ -901,17 +970,18 @@ body {
     if (!SR) { micFallback(); return; }
     stopSpeaking();
     rec = new SR();
-    rec.lang = navigator.language || "en-US";
+    rec.lang = (LANGS[settings.lang] || LANGS.en).rec;
     rec.interimResults = true;
     rec.continuous = false;
     heard = "";
-    rec.onstart = () => { listening = true; $("micBtn").classList.add("on"); setState("listening"); showReply("Listening…", true); };
+    rec.onstart = () => { listening = true; $("micBtn").classList.add("on"); setState("listening"); showReply(T().listening, true); };
     rec.onresult = (ev) => {
       heard = Array.from(ev.results).map((r) => r[0].transcript).join("");
       showReply(heard);
       $("prompt").value = heard;
     };
     rec.onerror = (ev) => {
+      if (ev.error === "language-not-supported") { log("sys", "This iPad can't listen in " + rec.lang + " yet. Add it under Settings, General, Keyboard, Dictation Languages, or switch Language in Jarvis settings."); return; }
       if (ev.error === "not-allowed" || ev.error === "service-not-allowed") micFallback(true);
       else if (ev.error !== "no-speech" && ev.error !== "aborted") log("sys", "Microphone: " + ev.error);
     };
@@ -929,9 +999,7 @@ body {
     listening = false;
     $("micBtn").classList.remove("on");
     setState("idle");
-    const line = denied
-      ? "I can't use the microphone here. Tap the text box and use the microphone key on the iPad keyboard to dictate."
-      : "Voice input isn't available in this browser. Tap the text box and use keyboard dictation instead.";
+    const line = denied ? T().micDenied : T().micNone;
     showReply(line);
     $("prompt").focus();
   }
@@ -1054,10 +1122,12 @@ body {
     $("setHands").checked = settings.hands;
     $("setDepth").value = settings.depth;
     $("setKey").value = settings.apiKey;
-    loadVoices();
+    $("setLang").value = settings.lang;
+    loadVoices(settings.lang);
     $("sheet").hidden = false;
   }
   function closeSheet() { $("sheet").hidden = true; }
+  $("setLang").addEventListener("change", (e) => loadVoices(e.target.value));
   $("settingsBtn").onclick = openSheet;
   $("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) closeSheet(); });
   $("saveBtn").onclick = () => {
@@ -1066,9 +1136,11 @@ body {
     settings.hands = $("setHands").checked;
     settings.depth = $("setDepth").value;
     settings.apiKey = $("setKey").value.trim();
+    settings.lang = $("setLang").value;
     const v = $("setVoice").value;
-    if (voices.some((x) => x.voiceURI === v)) settings.voice = v;
+    if (voices.some((x) => x.voiceURI === v)) settings.voices[settings.lang] = v;
     store.set("settings", settings);
+    applyLang();
     refreshBrain();
     closeSheet();
     log("sys", "Settings saved.");
@@ -1089,8 +1161,8 @@ body {
   /* ---------- boot ---------- */
   function greet() {
     const h = new Date().getHours();
-    const part = h < 5 ? "Working late" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-    const line = part + (settings.name ? ", " + settings.name : "") + ". Jarvis online. Tap the microphone or type to begin.";
+    const parts = T().parts;
+    const line = T().greet(h < 5 ? parts[0] : h < 12 ? parts[1] : h < 18 ? parts[2] : parts[3], settings.name);
     log("jarvis", line);
     showReply(line);
   }
@@ -1100,6 +1172,7 @@ body {
     else if (t.kind === "reminder") log("sys", "Missed reminder while Jarvis was closed: " + t.label);
   }
   saveTimers();
+  applyLang();
   renderMemory();
   renderTasks();
   tick();

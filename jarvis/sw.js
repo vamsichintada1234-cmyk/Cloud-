@@ -1,5 +1,5 @@
 // Offline shell for the Home Screen app. API calls always go to the network.
-const CACHE = "jarvis-v2";
+const CACHE = "jarvis-v3";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

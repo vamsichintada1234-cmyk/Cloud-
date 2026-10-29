@@ -5,6 +5,7 @@ A J.A.R.V.I.S.-style voice assistant that runs in Safari on iPad and installs to
 - Talk to it with the mic button (Safari speech recognition), or type / use keyboard dictation.
 - Replies are spoken aloud with an iPad system voice (pick a British one such as Daniel in Settings).
 - Conversation mode keeps listening after each reply.
+- Speaks Telugu by default (తెలుగు). Settings has Telugu, Tenglish (Telugu in English letters) and English. It understands all three whichever you pick. To hear Telugu out loud, install a Telugu voice in iPad Settings, Accessibility, Spoken Content, Voices.
 - Things it can do for you:
   - Time and date, countdown timers, and reminders at a clock time ("remind me at 7 pm to call mom"). They chime and speak when due, while Jarvis is open.
   - A to-do list you manage by voice: add, tick off, delete.
