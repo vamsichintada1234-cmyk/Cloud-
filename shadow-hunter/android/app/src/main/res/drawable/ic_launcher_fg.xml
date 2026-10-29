@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ninja head with a red headband and a blade, on the 108dp adaptive-icon canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#E6ECF5" android:pathData="M66,30 L72,24 L76,28 L70,34 Z" />
+    <path android:fillColor="#E6ECF5" android:pathData="M44,62 L69,33 L72,36 L47,65 Z" />
+    <path android:fillColor="#0B0C10" android:pathData="M54,36 a18,18 0 1,0 0.01,0 Z" />
+    <path android:fillColor="#E3263B" android:pathData="M36,48 L72,48 L72,55 L36,55 Z" />
+    <path android:fillColor="#E3263B" android:pathData="M36,50 L24,44 L26,50 L22,56 L36,54 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M45,57 L52,58 L51,61 L45,60 Z M57,58 L64,57 L64,60 L58,61 Z" />
+</vector>

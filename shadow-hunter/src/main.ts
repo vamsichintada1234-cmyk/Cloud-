@@ -3,13 +3,13 @@ import { Renderer } from "./render";
 
 /**
  * URL options:
- *   ?level=N   level to start on (default 1)
+ *   ?level=N   level to start on (default: the last level played, or 1)
  *   ?crowd=N   number of guards, overriding the level's default (1-2000)
  *   ?bench=S   benchmark mode: autopilot, invulnerable player, FPS overlay, runs for S seconds
  *              (any truthy value means 15 s; empty, 0, false or off disables it)
  */
 interface Params {
-  level: number;
+  level: number | null;
   crowd: number | null;
   bench: number;
 }
@@ -27,7 +27,7 @@ function parseParams(): Params {
     const n = Number(benchRaw);
     bench = Number.isFinite(n) && n > 1 ? Math.min(n, 600) : 15;
   }
-  return { level: int(q.get("level"), 1, 999) ?? 1, crowd: int(q.get("crowd"), 1, 2000), bench };
+  return { level: int(q.get("level"), 1, 999), crowd: int(q.get("crowd"), 1, 2000), bench };
 }
 
 function guardsForLevel(level: number): number {
@@ -40,23 +40,24 @@ const renderer = new Renderer(canvas);
 const $ = (id: string) => document.getElementById(id)!;
 
 let game!: Game;
-let level = params.level;
-
-function loadGems(): number {
+function loadNumber(key: string): number {
   try {
-    return Number(localStorage.getItem("shadowHunter.gems")) || 0;
+    return Number(localStorage.getItem(key)) || 0;
   } catch {
     return 0;
   }
 }
-function saveGems(n: number): void {
+function saveNumber(key: string, n: number): void {
   try {
-    localStorage.setItem("shadowHunter.gems", String(n));
+    localStorage.setItem(key, String(n));
   } catch {
-    /* storage unavailable: gems just won't persist */
+    /* storage unavailable: progress just won't persist */
   }
 }
-let bankedGems = loadGems();
+
+// The Android app opens without a ?level=, so pick up where the player left off.
+let level = params.level ?? Math.max(1, Math.min(999, loadNumber("shadowHunter.level")));
+let bankedGems = loadNumber("shadowHunter.gems");
 let shownAlive = -1;
 
 /** Enemy tracker: one head per guard (crossed out when down), or a count for big crowds. */
@@ -80,6 +81,7 @@ function renderTargets(): void {
 
 function startLevel(lv: number): void {
   level = lv;
+  if (!params.bench) saveNumber("shadowHunter.level", lv);
   game = new Game({
     level: lv,
     guards: params.crowd ?? guardsForLevel(lv),
@@ -269,7 +271,7 @@ function frame(now: number): void {
     ended = true;
     if (game.outcome === "won") {
       bankedGems += game.gemsCollected;
-      saveGems(bankedGems);
+      saveNumber("shadowHunter.gems", bankedGems);
       showOverlay("Level complete", `${game.kills} targets eliminated · +${game.gemsCollected} gems`, "Next level", () => {
         ended = false;
         startLevel(level + 1);
