@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity(), VoiceListener.Callback {
             if (!button.isPressed) return@setOnCheckedChangeListener
             if (checked) startWakeWord() else WakeWordService.stop(this)
         }
+        binding.saveKeyButton.setOnClickListener { saveApiKey() }
         binding.accessibilityButton.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -118,9 +119,12 @@ class MainActivity : AppCompatActivity(), VoiceListener.Callback {
     }
 
     private fun handle(alternatives: List<String>) {
-        val reply = brain.handle(alternatives)
-        binding.statusText.text = reply.message
-        if (reply.command is Command.Stop) speaker.stop() else speaker.speak(reply.message)
+        binding.statusText.setText(R.string.thinking)
+        brain.handle(alternatives) { reply ->
+            if (isDestroyed) return@handle
+            binding.statusText.text = reply.message
+            if (reply.command is Command.Stop) speaker.stop() else speaker.speak(reply.message)
+        }
     }
 
     override fun onListeningStarted() {
@@ -165,7 +169,16 @@ class MainActivity : AppCompatActivity(), VoiceListener.Callback {
         Toast.makeText(this, R.string.wake_started, Toast.LENGTH_SHORT).show()
     }
 
+    private fun saveApiKey() {
+        val key = binding.apiKeyInput.text.toString().trim()
+        Prefs.setClaudeApiKey(this, key)
+        binding.apiKeyInput.text.clear()
+        refreshStatus()
+        Toast.makeText(this, if (key.isEmpty()) R.string.ai_removed else R.string.ai_saved, Toast.LENGTH_SHORT).show()
+    }
+
     private fun refreshStatus() {
+        binding.aiStatus.setText(if (Prefs.claudeApiKey(this) != null) R.string.ai_on else R.string.ai_off)
         binding.wakeSwitch.isChecked = WakeWordService.isRunning
         val accessibilityOn = PhoneAccessibilityService.isEnabled(this)
         binding.accessibilityStatus.setText(

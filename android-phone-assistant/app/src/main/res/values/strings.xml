@@ -20,8 +20,15 @@
     <string name="accessibility_enable">Turn on full phone control</string>
     <string name="accessibility_manage">Accessibility settings</string>
     <string name="accessibility_description">Lets My Phone press buttons, go back or home, scroll, type text, take screenshots and lock the screen when you ask by voice. My Phone does not collect or send what is on your screen.</string>
+    <string name="thinking">Thinking…</string>
+    <string name="save">Save</string>
+    <string name="ai_key_hint">Claude API key (sk-ant-…)</string>
+    <string name="ai_on">Claude AI: ON — questions and anything I don\'t recognise go to Claude. Save an empty key to turn it off.</string>
+    <string name="ai_off">Claude AI: OFF — add an API key from console.anthropic.com to answer questions and understand free-form Telugu.</string>
+    <string name="ai_saved">Claude is on</string>
+    <string name="ai_removed">Claude is off</string>
     <string name="permissions_ok">All permissions granted.</string>
     <string name="permissions_missing">Missing permissions: %1$s</string>
     <string name="no_recognizer">Speech recognition is not available. Install or update the Google app.</string>
-    <string name="examples">Try saying:\n• Hello my phone, open YouTube\n• Search Telugu songs on YouTube\n• Call Amma  /  Amma ki call cheyi\n• Send WhatsApp to Ravi saying I am coming\n• Navigate to Hyderabad railway station\n• Set alarm for 6:30 am  /  Set timer for 5 minutes\n• Turn on flashlight  /  Volume up\n• Take a photo  /  Take a screenshot\n• Go back  /  Go home  /  Scroll down\n• Click Subscribe  /  Type hello\n• What time is it?  /  Battery\n• Open WiFi settings\n• Stop</string>
+    <string name="examples">Try saying:\n• Hello my phone, open YouTube\n• Search Telugu songs on YouTube\n• Call Amma  /  Amma ki call cheyi\n• Send WhatsApp to Ravi saying I am coming\n• Navigate to Hyderabad railway station\n• Set alarm for 6:30 am  /  Set timer for 5 minutes\n• Turn on flashlight  /  Volume up\n• Take a photo  /  Take a screenshot\n• Go back  /  Go home  /  Scroll down\n• Click Subscribe  /  Type hello\n• What time is it?  /  Battery\n• Who won yesterday\'s cricket match?  (Claude)\n• ఈరోజు హైదరాబాద్ వాతావరణం ఎలా ఉంది?  (Claude)\n• Open WiFi settings\n• Stop</string>
 </resources>

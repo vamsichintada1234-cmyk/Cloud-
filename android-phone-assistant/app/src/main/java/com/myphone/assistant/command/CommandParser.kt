@@ -231,8 +231,8 @@ object CommandParser {
     private fun webSearch(t: String): Command? {
         Regex("(?:google|search|search for|look up|find)(?: for)? (.+)").groups(t)
             ?.let { return Command.SearchIn(SearchApp.GOOGLE, it[1]) }
-        if (t.matches(Regex("(?:what|who|when|where|why|how|which|define|meaning of)\\b.+"))) {
-            return Command.SearchIn(SearchApp.GOOGLE, t)
+        if (t.matches(Regex("(?:what|who|whom|whose|when|where|why|how|which|is|are|can|should|tell me|explain|define|meaning of)\\b.+"))) {
+            return Command.Question(t)
         }
         return null
     }

@@ -55,6 +55,7 @@ class CommandExecutor(private val context: Context) {
         Command.TellDate -> "Today is ${SimpleDateFormat("EEEE, d MMMM yyyy", Locale.ENGLISH).format(Date())}."
         Command.Battery -> battery()
         Command.Stop -> "Okay."
+        is Command.Question -> search(SearchApp.GOOGLE, command.text)
         is Command.Unknown -> unknown(command.text)
     }
 

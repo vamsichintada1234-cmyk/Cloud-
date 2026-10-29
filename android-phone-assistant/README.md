@@ -22,6 +22,18 @@
 | Stop | Stops listening |
 
 Anything it does not understand is tried as an app name, then searched on Google.
+With **Claude AI** turned on, those requests go to Claude instead (see below).
+
+## Claude AI (optional)
+
+Paste a Claude API key (from https://console.anthropic.com) into the app and press **Save**.
+
+- Known commands ("open YouTube", "call Amma") still run instantly and offline. Claude is only used for questions and for requests the built-in rules don't recognise.
+- Claude can **answer questions** in English or Telugu ("ఈరోజు హైదరాబాద్ వాతావరణం ఎలా ఉంది?") and uses **web search** for current information such as news, weather and cricket scores.
+- Claude can **control the phone** from free-form speech: "naaku konchem music vinalani undi" leads to a `play … ` command, which the normal command engine runs.
+- Answers are spoken aloud. Telugu answers use a Telugu voice if one is installed (Settings → Text-to-speech).
+- Model: `claude-opus-5-5`, low effort for fast voice replies (`ai/ClaudeAssistant.kt`). Refusals fall back to another model on the server.
+- The key is stored only on the phone (app-private storage, excluded from backups). Each request is billed to your Anthropic account. Save an empty key to turn Claude off.
 
 ## Build & install
 
@@ -49,6 +61,8 @@ Or open the `android-phone-assistant` folder in Android Studio and press ▶ Run
 
 ```
 Mic ─► SpeechRecognizer ─► TeluguNormalizer ─► CommandParser ─► CommandExecutor ─► TTS reply
+                                                      │ unknown / question      ▲
+                                                      └──► Claude ──(command)───┘ or spoken answer
         (voice/)              (Telugu/Tenglish       (text → Command)   (Intents, contacts,
                                → English, SOV order)                   PhoneAccessibilityService)
 ```
@@ -57,6 +71,7 @@ Mic ─► SpeechRecognizer ─► TeluguNormalizer ─► CommandParser ─► 
 - `system/CommandExecutor.kt` — turns a command into Android intents (call, YouTube search, maps, alarm…).
 - `system/PhoneAccessibilityService.kt` — global actions, tap-by-text, typing and swipe gestures.
 - `voice/WakeWordService.kt` — foreground service that listens for "Hello my phone".
+- `ai/ClaudeAssistant.kt` — Claude API call (Anthropic Java SDK): a `run_phone_command` tool plus web search.
 - Add a new command: add a case to `Command`, a rule in `CommandParser`, the action in `CommandExecutor`, and a test.
 
 ## Known limits

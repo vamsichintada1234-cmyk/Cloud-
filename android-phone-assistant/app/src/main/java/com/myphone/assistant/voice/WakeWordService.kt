@@ -132,11 +132,16 @@ class WakeWordService : Service(), VoiceListener.Callback {
     }
 
     private fun respond(alternatives: List<String>) {
-        val reply = brain.handle(alternatives)
-        if (reply.command is Command.Stop) {
-            say("Okay, I'll stop listening.") { stopSelf() }
-        } else {
-            say(reply.message)
+        speaking = true
+        handler.removeCallbacks(listenRunnable)
+        listener.cancel()
+        brain.handle(alternatives) { reply ->
+            if (!isRunning) return@handle
+            if (reply.command is Command.Stop) {
+                say("Okay, I'll stop listening.") { stopSelf() }
+            } else {
+                say(reply.message)
+            }
         }
     }
 

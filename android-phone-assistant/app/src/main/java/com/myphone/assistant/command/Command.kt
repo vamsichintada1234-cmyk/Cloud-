@@ -52,5 +52,8 @@ sealed class Command {
     data object TellDate : Command()
     data object Battery : Command()
     data object Stop : Command()
+
+    /** A general question ("who is…", "how do I…") — answered by Claude, or Google without AI. */
+    data class Question(val text: String) : Command()
     data class Unknown(val text: String) : Command()
 }

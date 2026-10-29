@@ -46,7 +46,8 @@ class CommandParserTest {
         assertParses(Command.SearchIn(SearchApp.SPOTIFY, "arijit singh"), "play Arijit Singh on Spotify")
         assertParses(Command.SearchIn(SearchApp.MAPS, "pizza"), "find pizza on google maps")
         assertParses(Command.SearchIn(SearchApp.GOOGLE, "weather in hyderabad"), "search weather in Hyderabad")
-        assertParses(Command.SearchIn(SearchApp.GOOGLE, "who is the prime minister of india"), "Who is the prime minister of India?")
+        assertParses(Command.Question("who is the prime minister of india"), "Who is the prime minister of India?")
+        assertParses(Command.Question("explain black holes simply"), "Explain black holes simply")
         assertParses(Command.SearchIn(SearchApp.MAPS, "charminar"), "where is Charminar")
     }
 

@@ -13,4 +13,10 @@ object Prefs {
     fun setLanguage(context: Context, tag: String) {
         prefs(context).edit().putString("language", tag).apply()
     }
+
+    fun claudeApiKey(context: Context): String? = prefs(context).getString("claude_api_key", null)
+
+    fun setClaudeApiKey(context: Context, key: String?) {
+        prefs(context).edit().putString("claude_api_key", key?.trim()?.ifEmpty { null }).apply()
+    }
 }

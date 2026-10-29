@@ -17,14 +17,17 @@ class Speaker(context: Context) : TextToSpeech.OnInitListener {
     private val callbacks = ConcurrentHashMap<String, () -> Unit>()
     private val pending = mutableListOf<Pair<String, (() -> Unit)?>>()
     private var state = State.INITIALIZING
+    private val english = Locale.forLanguageTag("en-IN")
+    private val telugu = Locale.forLanguageTag("te-IN")
+    private var hasTelugu = false
 
     private enum class State { INITIALIZING, READY, FAILED }
 
     override fun onInit(status: Int) {
         main.post {
             if (status == TextToSpeech.SUCCESS) {
-                val india = Locale.forLanguageTag("en-IN")
-                if (tts.isLanguageAvailable(india) >= TextToSpeech.LANG_AVAILABLE) tts.language = india
+                if (tts.isLanguageAvailable(english) >= TextToSpeech.LANG_AVAILABLE) tts.language = english
+                hasTelugu = tts.isLanguageAvailable(telugu) >= TextToSpeech.LANG_AVAILABLE
                 tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) = Unit
                     override fun onDone(utteranceId: String?) = finish(utteranceId)
@@ -50,6 +53,8 @@ class Speaker(context: Context) : TextToSpeech.OnInitListener {
             State.READY -> {
                 val id = UUID.randomUUID().toString()
                 onDone?.let { callbacks[id] = it }
+                // Claude may answer in Telugu script; the English voice can't read it.
+                tts.language = if (hasTelugu && text.any { it in '\u0C00'..'\u0C7F' }) telugu else english
                 if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) == TextToSpeech.ERROR) finish(id)
             }
         }
