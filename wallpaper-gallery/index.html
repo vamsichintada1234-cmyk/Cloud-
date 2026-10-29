@@ -23,6 +23,8 @@
   --accent-ink:#16112a;
   --heart:#ff6f8f;
   --scrim:rgba(6,5,10,.62);
+  --ok:#7ee0a8;
+  --warn:#edae49;
   --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
   --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -106,6 +108,62 @@ main.wrap{padding-block:16px 48px}
 .result img{display:block;max-width:100%;max-height:36vh;width:auto;border-radius:10px;margin-top:10px;-webkit-touch-callout:default}
 .result .fname{font-family:var(--mono);font-size:11px;color:var(--muted);word-break:break-all;text-align:center}
 .result p{color:var(--fg);text-align:center;max-width:40ch}
+/* creator marketplace */
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding-top:8px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:0;background:transparent;padding:8px 12px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.section-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.h{font-family:var(--display);font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.15;text-wrap:balance}
+.h3{font-family:var(--display);font-size:18px;font-weight:700;letter-spacing:-.015em;margin:0 0 10px}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 0;max-width:62ch}
+.note{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--muted);max-width:70ch;margin:0 0 18px}
+.note b{color:var(--fg)}
+.card img{display:block;width:100%;height:100%;object-fit:cover}
+.card-stack{min-width:0;display:flex;flex-direction:column}
+.card-by{font-size:11px;font-weight:500;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill.plain::before{display:none}
+.sortsel{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--fg);font:inherit;font-size:13px}
+.form{display:grid;gap:16px;max-width:520px}
+.fl{display:grid;gap:6px;font-size:13px;font-weight:600}
+.fl input[type="text"],.fl select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--fg);font:inherit;font-size:15px;font-weight:500;width:100%}
+.fl input:focus-visible,.fl select:focus-visible,.sortsel:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.drop{border:1.5px dashed var(--line);border-radius:14px;padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer;background:var(--surface)}
+.drop:hover,.drop:focus-within{border-color:var(--accent)}
+.drop img{width:64px;aspect-ratio:9/19.5;object-fit:cover;border-radius:8px;flex:none}
+.drop-t{min-width:0;font-size:13px;color:var(--muted)}
+.drop-t b{display:block;color:var(--fg);font-size:14px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);font-weight:500}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{background:#cbbdff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:6px 12px;font-size:12px}
+.err{color:var(--heart);font-size:13px;margin:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.tile span{font-size:12px;color:var(--muted);font-weight:600}
+.tile b{display:block;font-family:var(--display);font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile.hl{border-color:var(--accent)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin-bottom:22px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right}
+td.n{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22px 12px}
+.status{display:inline-block;font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.status.paid{color:var(--ok)}
+.status.pending{color:var(--warn)}
+.payrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:22px}
+.payrow .fl{flex:1 1 220px}
+.upi{font-family:var(--mono);font-size:12px;user-select:all}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:13px;font-weight:600;width:max-content;max-width:calc(100% - 32px);text-align:center}
+.phone .vimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
+.vb.danger{color:var(--heart)}
 @media (prefers-reduced-motion:reduce){.card,.chip{transition:none}.pill::before{animation:none}}
 </style>
 
@@ -121,15 +179,61 @@ main.wrap{padding-block:16px 48px}
       </div>
       <span class="count" id="count"></span>
     </div>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" type="button" role="tab" data-view="gallery" aria-selected="true">Originals</button>
+      <button class="tab" type="button" role="tab" data-view="community" aria-selected="false">Community</button>
+      <button class="tab" type="button" role="tab" data-view="upload" aria-selected="false">Upload &amp; earn</button>
+      <button class="tab" type="button" role="tab" data-view="earn" aria-selected="false">My earnings</button>
+      <button class="tab" type="button" role="tab" data-view="admin" aria-selected="false" hidden>Payouts</button>
+    </div>
     <nav class="chips" id="chips" aria-label="Categories"></nav>
   </div>
 </header>
 
 <main class="wrap">
-  <div class="grid" id="grid"></div>
-  <p class="empty" id="empty" hidden>No favorites yet. Open any wallpaper and tap the heart to keep it here.</p>
-  <div class="more-row" id="moreRow"><button class="btn" id="more" type="button"></button></div>
+  <section id="view-gallery">
+    <div class="grid" id="grid"></div>
+    <p class="empty" id="empty" hidden>No favorites yet. Open any wallpaper and tap the heart to keep it here.</p>
+    <div class="more-row" id="moreRow"><button class="btn" id="more" type="button"></button></div>
+  </section>
+
+  <section id="view-community" hidden>
+    <div class="section-h">
+      <div><h2 class="h">Community wallpapers</h2><p class="sub">Uploaded by creators. Every download pays the creator.</p></div>
+      <select class="sortsel" id="comSort" aria-label="Sort community wallpapers"><option value="new">Newest</option><option value="top">Most downloaded</option></select>
+    </div>
+    <div class="grid" id="comGrid"></div>
+    <p class="empty" id="comEmpty">No uploads yet. Upload the first wallpaper and earn ₹1 for every download.</p>
+  </section>
+
+  <section id="view-upload" hidden>
+    <div class="section-h"><div><h2 class="h">Upload a wallpaper, earn per download</h2><p class="sub" id="rateLine"></p></div></div>
+    <p class="note" id="upGate" hidden></p>
+    <form class="form" id="upForm" novalidate>
+      <label class="drop" for="upFile">
+        <img id="upPrev" alt="" hidden>
+        <span class="drop-t"><b id="upFileT">Choose an image</b><span id="upFileS">PNG, JPG or WebP, up to 20 MB. The short side must be at least 1080 px.</span></span>
+        <input class="vh" type="file" id="upFile" accept="image/png,image/jpeg,image/webp">
+      </label>
+      <label class="fl" for="upTitle">Title<input type="text" id="upTitle" maxlength="40" placeholder="e.g. Monsoon Over Araku" autocomplete="off"></label>
+      <label class="fl" for="upCat">Category<select id="upCat"></select></label>
+      <label class="check" for="upRights"><input type="checkbox" id="upRights"><span>I made this image or own the rights to share it. Copied or copyrighted images are removed and earn nothing.</span></label>
+      <p class="err" id="upErr" hidden></p>
+      <div><button class="btn primary" type="submit" id="upBtn">Upload wallpaper</button></div>
+    </form>
+  </section>
+
+  <section id="view-earn" hidden>
+    <div class="section-h"><div><h2 class="h">My earnings</h2><p class="sub" id="earnRate"></p></div></div>
+    <div id="earnBody"></div>
+  </section>
+
+  <section id="view-admin" hidden>
+    <div class="section-h"><div><h2 class="h">Creator payouts</h2><p class="sub">Only you, the owner, see this page. Pay each request by UPI, then mark it paid.</p></div></div>
+    <div id="adminBody"></div>
+  </section>
 </main>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="vName" hidden>
   <div class="v-top">
@@ -138,9 +242,18 @@ main.wrap{padding-block:16px 48px}
   </div>
   <div class="phone" id="phone">
     <canvas id="vCanvas"></canvas>
+    <img class="vimg" id="vImg" alt="" hidden>
     <div class="lock" id="lock"><div class="lock-date" id="lockDate"></div><div class="lock-time" id="lockTime"></div></div>
   </div>
-  <div class="v-bar">
+  <div class="v-bar" id="cBar" hidden>
+    <button class="vb nav" id="cPrev" type="button"></button>
+    <button class="vb" id="cLike" type="button" aria-pressed="false"></button>
+    <button class="vb lock-t" id="cLock" type="button" aria-pressed="true"></button>
+    <button class="vb primary" id="cGet" type="button"></button>
+    <button class="vb danger" id="cRemove" type="button" hidden></button>
+    <button class="vb nav" id="cNext" type="button"></button>
+  </div>
+  <div class="v-bar" id="vBar">
     <button class="vb nav" id="bPrev" type="button"></button>
     <button class="vb" id="bFav" type="button" aria-pressed="false"></button>
     <button class="vb" id="bColor" type="button"></button>
@@ -436,13 +549,15 @@ $('more').addEventListener('click',()=>{const gk=Object.keys(GEN);
 
 /* ---------- viewer ---------- */
 const viewer=$('viewer'),vCanvas=$('vCanvas'),vctx=vCanvas.getContext('2d'),sheet=$('sheet');
-let vList=[],vIdx=0,vOpen=false,vDirty=true,lockOn=true,lastFocus=null;
+let vList=[],vIdx=0,vOpen=false,vDirty=true,lockOn=true,lastFocus=null,vMode='gen';
 
-function openViewer(i){lastFocus=document.activeElement;vList=current.slice();vIdx=i;vOpen=true;viewer.hidden=false;
+function openViewer(i,src,mode){lastFocus=document.activeElement;vMode=mode||'gen';vList=(src||current).slice();vIdx=i;vOpen=true;viewer.hidden=false;
   document.documentElement.style.overflow='hidden';updateViewer();$('vClose').focus()}
-function closeViewer(){vOpen=false;viewer.hidden=true;closeSheet();document.documentElement.style.overflow='';renderChips();renderGrid();
+function closeViewer(){vOpen=false;viewer.hidden=true;closeSheet();document.documentElement.style.overflow='';if(vMode==='gen'){renderChips();renderGrid()}
   if(lastFocus&&document.contains(lastFocus))lastFocus.focus()}
-function updateViewer(){const it=vList[vIdx],g=GEN[it.g];
+function updateViewer(){const com=vMode==='com';$('vBar').hidden=com;$('cBar').hidden=!com;vCanvas.hidden=com;$('vImg').hidden=!com;
+  if(com){closeSheet();updateCom();return}
+  const it=vList[vIdx],g=GEN[it.g];
   $('vName').textContent=nameOf(it);
   $('vMeta').textContent=`${g.live?'LIVE':'STILL'} · ${CATS[g.cat].toUpperCase()} · ${vIdx+1}/${vList.length}`;
   const f=favs.has(it.id);$('bFav').setAttribute('aria-pressed',f);$('bFav').innerHTML=vbHTML(f?ICON.heartFill:ICON.heart,f?'Saved':'Favorite');
@@ -455,7 +570,8 @@ $('bPrev').addEventListener('click',()=>step(-1));$('bNext').addEventListener('c
 $('bFav').addEventListener('click',()=>{const it=vList[vIdx];if(favs.has(it.id))favs.delete(it.id);else favs.set(it.id,{g:it.g,p:it.p,seed:it.seed});saveFavs();updateViewer()});
 $('bRemix').addEventListener('click',()=>{const it=vList[vIdx];insertVariant(mk(it.g,it.p,randSeed()))});
 $('bColor').addEventListener('click',()=>{const it=vList[vIdx];const p=PAL_KEYS[(PAL_KEYS.indexOf(it.p)+1)%PAL_KEYS.length];insertVariant(mk(it.g,p,it.seed))});
-$('bLock').addEventListener('click',()=>{lockOn=!lockOn;$('lock').hidden=!lockOn;$('bLock').setAttribute('aria-pressed',lockOn)});
+const toggleLock=()=>{lockOn=!lockOn;$('lock').hidden=!lockOn;$('bLock').setAttribute('aria-pressed',lockOn);$('cLock').setAttribute('aria-pressed',lockOn)};
+$('bLock').addEventListener('click',toggleLock);$('cLock').addEventListener('click',toggleLock);
 
 let sx=null;
 $('phone').addEventListener('pointerdown',e=>{sx=e.clientX});
@@ -477,7 +593,7 @@ function closeSheet(){sheet.hidden=true}
 $('sClose').addEventListener('click',closeSheet);
 $('bSave').addEventListener('click',()=>{const it=vList[vIdx];
   $('sheetNote').textContent=GEN[it.g].live?'Live wallpapers save the frame showing right now. Pick a screen size; it is redrawn at full resolution.':'Pick a screen size. The wallpaper is redrawn at full resolution, so it stays sharp.';
-  $('result').hidden=true;sheet.hidden=false;sheet.querySelector('.size').focus()});
+  $('sizes').hidden=false;$('result').hidden=true;sheet.hidden=false;sheet.querySelector('.size').focus()});
 $('sizes').addEventListener('click',e=>{const b=e.target.closest('.size');if(!b)return;const[label,W,H]=SIZES[+b.dataset.i],it=vList[vIdx];
   const t=isLive(it)?now()+it.t0:it.t0+3;b.setAttribute('aria-busy','true');
   setTimeout(()=>{const c=document.createElement('canvas');c.width=W;c.height=H;drawItem(c.getContext('2d'),W,H,it,t);
@@ -488,13 +604,238 @@ $('sizes').addEventListener('click',e=>{const b=e.target.closest('.size');if(!b)
 /* ---------- loop ---------- */
 let frame=0;
 function loop(){frame++;
-  if(vOpen){const it=vList[vIdx],dpr=Math.min(2,window.devicePixelRatio||1);
+  if(vOpen){if(vMode==='gen'){const it=vList[vIdx],dpr=Math.min(2,window.devicePixelRatio||1);
     const W=Math.round(vCanvas.clientWidth*dpr),H=Math.round(vCanvas.clientHeight*dpr);
     if(W&&H){if(vCanvas.width!==W||vCanvas.height!==H){vCanvas.width=W;vCanvas.height=H;vDirty=true}
-      if(isLive(it)||vDirty){drawItem(vctx,W,H,it,isLive(it)?now()+it.t0:it.t0+3);vDirty=false}}}
+      if(isLive(it)||vDirty){drawItem(vctx,W,H,it,isLive(it)?now()+it.t0:it.t0+3);vDirty=false}}}}
   else if(!reduced&&frame%2===0){for(const cv of visible)if(GEN[cv._item.g].live)paintThumb(cv)}
   requestAnimationFrame(loop)}
 let resizeT;window.addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{for(const cv of visible)paintThumb(cv,true)},150)});
+
+/* ---------- creator marketplace: uploads, unique downloads, earnings, payouts ---------- */
+const RATE_DL=1,RATE_LIKE=0.2,MIN_PAYOUT=100;
+const COM_CATS=['Nature','Space','Abstract','Gradients','Neon','Anime','Cars','Minimal','Devotional','Other'];
+const inr=n=>'₹'+(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const blobURL=id=>'/_blob/'+encodeURIComponent(id);
+const NO_WRITE='Browsing works, but likes, counted downloads and uploads need Contributor access. Ask the page owner to share it with you as a Contributor.';
+
+let db=null,userCap=null,assets=null,downloads=null,me=null,isOwner=false,comState='loading';
+let creators={},acts={},myPay=null,myLedger=null,allPay={},allLedger={};
+const names={};
+const writeQ={};
+const enqueue=(path,fn)=>{const next=(writeQ[path]||Promise.resolve()).catch(()=>{}).then(fn);writeQ[path]=next;return next};
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>{t.hidden=true},3400)}
+$('rateLine').textContent=`You earn ${inr(RATE_DL)} for every person who downloads your wallpaper and ${inr(RATE_LIKE)} for every like. Request a payout to your UPI ID once you reach ${inr(MIN_PAYOUT)}.`;
+$('earnRate').textContent=`${inr(RATE_DL)} per unique download · ${inr(RATE_LIKE)} per like · payouts from ${inr(MIN_PAYOUT)}`;
+$('upCat').innerHTML=COM_CATS.map(c=>`<option>${c}</option>`).join('');
+$('cPrev').innerHTML=vbHTML(ICON.prev,'Prev');$('cNext').innerHTML=vbHTML(ICON.next,'Next');
+$('cLock').innerHTML=vbHTML(ICON.lock,'Clock');$('cGet').innerHTML=vbHTML(ICON.save,'Download');
+$('cPrev').addEventListener('click',()=>step(-1));$('cNext').addEventListener('click',()=>step(1));
+
+/* views */
+let view='gallery';
+function showView(v){view=v;for(const b of document.querySelectorAll('.tab'))b.setAttribute('aria-selected',b.dataset.view===v);
+  for(const k of ['gallery','community','upload','earn','admin'])$('view-'+k).hidden=k!==v;
+  $('chips').hidden=v!=='gallery';
+  renderCommunity();renderEarn();renderAdmin();renderUploadGate();
+  try{localStorage.setItem('glowwall-view',v)}catch(e){}}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)showView(b.dataset.view)});
+
+/* people */
+async function loadNames(ids){if(!userCap||!ids.length)return;
+  try{const ps=await userCap.profiles(ids);for(const id of ids)names[id]=(ps[id]&&ps[id].name)||''}catch(e){}}
+const nameFor=id=>id===me?'You':(names[id]||'A creator');
+
+/* counting: each viewer counts once per wallpaper; creators' own actions never count */
+const keyOf=(uid,wid)=>uid+'~'+wid;
+const ownerOfKey=k=>k.slice(0,k.lastIndexOf('~'));
+function counts(){const s={};
+  const bump=(k,f,uid)=>{if(ownerOfKey(k)===uid)return;(s[k]||(s[k]={dl:0,like:0}))[f]++};
+  for(const[uid,a]of Object.entries(acts)){for(const k in (a.dl||{}))bump(k,'dl',uid);for(const k in (a.like||{}))if(a.like[k])bump(k,'like',uid)}
+  return s}
+const earnOf=st=>st?st.dl*RATE_DL+st.like*RATE_LIKE:0;
+function comItems(){const out=[];
+  for(const[uid,c]of Object.entries(creators))for(const w of (c.walls||[]))if(w&&w.asset)out.push({uid,w,key:keyOf(uid,w.id)});
+  return out}
+function balance(uid,payDoc,ledgerDoc,st){let earned=0;
+  for(const k in st)if(ownerOfKey(k)===uid)earned+=earnOf(st[k]);
+  const paidList=(ledgerDoc&&ledgerDoc.paid)||[],paidIds=new Set(paidList.map(p=>p.id));
+  const paid=paidList.reduce((a,p)=>a+(+p.amount||0),0);
+  const reqs=(payDoc&&payDoc.requests)||[];
+  const pending=reqs.filter(r=>!paidIds.has(r.id)).reduce((a,r)=>a+(+r.amount||0),0);
+  return{earned,paid,pending,available:Math.max(0,Math.floor((earned-paid-pending)*100)/100),reqs,paidIds}}
+const fmtDate=(t,y)=>new Date(t).toLocaleDateString('en-IN',y?{day:'numeric',month:'short',year:'numeric'}:{day:'numeric',month:'short'});
+
+/* community grid */
+let comList=[];
+function renderCommunity(){if(view!=='community')return;
+  const st=counts(),L=comItems();
+  if($('comSort').value==='top')L.sort((a,b)=>((st[b.key]||{}).dl||0)-((st[a.key]||{}).dl||0)||b.w.at-a.w.at);else L.sort((a,b)=>b.w.at-a.w.at);
+  comList=L;const g=$('comGrid');g.innerHTML='';
+  const empty=$('comEmpty');
+  empty.textContent=comState==='offline'?'Community uploads load when this page is opened in Claude while signed in.':comState==='loading'?'Loading community wallpapers…':`No uploads yet. Upload the first wallpaper and earn ${inr(RATE_DL)} for every download.`;
+  empty.hidden=L.length>0;
+  L.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='card';b.setAttribute('aria-label',`${it.w.title} by ${nameFor(it.uid)}`);
+    const n=(st[it.key]||{}).dl||0;
+    b.innerHTML=`<img loading="lazy" alt="" src="${blobURL(it.w.asset)}"><span class="pill plain">${n} ↓</span><span class="card-meta"><span class="card-stack"><span class="card-name">${esc(it.w.title)}</span><span class="card-by" data-uid="${esc(it.uid)}">${esc(nameFor(it.uid))}</span></span></span>`;
+    b.querySelector('img').addEventListener('error',e=>{e.target.style.visibility='hidden'});
+    b.addEventListener('click',()=>openViewer(i,comList,'com'));g.appendChild(b)});
+  loadNames([...new Set(L.map(i=>i.uid))]).then(()=>{for(const el of g.querySelectorAll('.card-by'))el.textContent=nameFor(el.dataset.uid)})}
+$('comSort').addEventListener('change',renderCommunity);
+
+/* community viewer */
+function comMeta(it){const st=counts()[it.key]||{dl:0,like:0};return`BY ${nameFor(it.uid).toUpperCase()} · ${st.dl} DOWNLOADS · ${st.like} LIKES`}
+function updateCom(){const it=vList[vIdx];if(!it)return;
+  const img=$('vImg'),src=blobURL(it.w.asset);if(img.getAttribute('src')!==src)img.src=src;img.alt=it.w.title;
+  $('vName').textContent=it.w.title;$('vMeta').textContent=comMeta(it);
+  const liked=!!(acts[me]&&acts[me].like&&acts[me].like[it.key]);
+  $('cLike').setAttribute('aria-pressed',liked);$('cLike').innerHTML=vbHTML(liked?ICON.heartFill:ICON.heart,liked?'Liked':'Like');
+  $('cRemove').hidden=!(isOwner||it.uid===me);armRemove(false);
+  loadNames([it.uid]).then(()=>{if(vList[vIdx]===it)$('vMeta').textContent=comMeta(it)})}
+
+function myActs(){const a=acts[me]||{};return{dl:{...(a.dl||{})},like:{...(a.like||{})}}}
+async function writeActs(a){if(!db||!me)throw new Error('no identity');const prev=acts[me];acts={...acts,[me]:a};
+  try{await enqueue('acts/'+me,()=>db.doc('acts/'+me).set(a))}
+  catch(e){const o={...acts};if(prev)o[me]=prev;else delete o[me];acts=o;throw e}}
+async function countDownload(it){if(!me)return;const a=myActs();if(a.dl[it.key])return;a.dl[it.key]=Date.now();try{await writeActs(a)}catch(e){}}
+
+$('cLike').addEventListener('click',async()=>{const it=vList[vIdx];if(!me){toast(NO_WRITE);return}
+  const a=myActs();if(a.like[it.key])delete a.like[it.key];else a.like[it.key]=Date.now();
+  const p=writeActs(a);updateCom();try{await p}catch(e){toast(NO_WRITE)}updateCom()});
+
+const slug=t=>(t||'wallpaper').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'wallpaper';
+function showComSave(it){$('sizes').hidden=true;$('sheetNote').textContent='';$('savedImg').src=blobURL(it.w.asset);
+  $('savedName').textContent=`${it.w.title} · ${it.w.w} × ${it.w.h}`;$('result').hidden=false;sheet.hidden=false;countDownload(it)}
+$('cGet').addEventListener('click',async()=>{const it=vList[vIdx],btn=$('cGet');
+  if(!downloads){showComSave(it);return}
+  const first=!myActs().dl[it.key];btn.setAttribute('aria-busy','true');
+  try{const r=await fetch(blobURL(it.w.asset));if(!r.ok)throw new Error('fetch');const b=await r.blob();
+    const ext=((b.type||'image/png').split('/')[1]||'png').replace('jpeg','jpg');
+    const res=await downloads.save({filename:`${slug(it.w.title)}.${ext}`,data:b});
+    if(res==='saved'||res==='delivered'){await countDownload(it);
+      toast(it.uid===me?'Saved. Your own downloads don’t count toward earnings.':first&&me?`Saved. The creator just earned ${inr(RATE_DL)}.`:'Saved.')}}
+  catch(e){if(!(e&&e.code==='declined'))showComSave(it)}
+  finally{btn.removeAttribute('aria-busy')}});
+
+let removeArmed=false,removeT;
+function armRemove(on){removeArmed=on;clearTimeout(removeT);$('cRemove').innerHTML=vbHTML(ICON.close,on?'Tap again':'Remove');if(on)removeT=setTimeout(()=>armRemove(false),3500)}
+$('cRemove').addEventListener('click',async()=>{if(!removeArmed){armRemove(true);return}armRemove(false);
+  const it=vList[vIdx],c=creators[it.uid];if(!c||!db)return;
+  const walls=(c.walls||[]).filter(w=>w.id!==it.w.id);
+  try{await enqueue('creators/'+it.uid,()=>db.doc('creators/'+it.uid).set({...c,walls,updatedAt:Date.now()}));
+    if(assets)assets.delete(it.w.asset).catch(()=>{});
+    toast('Wallpaper removed.');vList.splice(vIdx,1);
+    if(!vList.length)closeViewer();else{vIdx=Math.min(vIdx,vList.length-1);updateViewer()}}
+  catch(e){toast('Couldn’t remove it. Only its creator or the page owner can.')}});
+
+/* upload */
+const UP_HINT='PNG, JPG or WebP, up to 20 MB. The short side must be at least 1080 px.';
+let upFile=null,upDims=null;
+function renderUploadGate(){const g=$('upGate');let msg='';
+  if(comState==='offline')msg='Uploading works when this page is opened in Claude while signed in.';
+  else if(comState==='ready'&&(!assets||!me))msg='<b>Uploading needs Contributor access.</b> Ask the owner of this page to share it with you as a Contributor, then reload.';
+  g.innerHTML=msg;g.hidden=!msg;$('upBtn').disabled=!!msg||comState!=='ready'}
+function resetUploadFile(){upFile=null;upDims=null;const pv=$('upPrev');if(pv.src.startsWith('blob:'))URL.revokeObjectURL(pv.src);pv.removeAttribute('src');pv.hidden=true;
+  $('upFileT').textContent='Choose an image';$('upFileS').textContent=UP_HINT}
+$('upFile').addEventListener('change',async()=>{const f=$('upFile').files[0];resetUploadFile();$('upErr').hidden=true;if(!f)return;
+  const err=m=>{$('upErr').textContent=m;$('upErr').hidden=false};
+  if(!['image/png','image/jpeg','image/webp'].includes(f.type))return err('That file type isn’t supported. Choose a PNG, JPG or WebP image.');
+  if(f.size>20*1048576)return err('That image is over 20 MB. Export a smaller file and try again.');
+  const url=URL.createObjectURL(f),img=new Image();
+  try{await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src=url})}catch(e){URL.revokeObjectURL(url);return err('That image couldn’t be read. Try a different file.')}
+  const w=img.naturalWidth,h=img.naturalHeight;
+  if(Math.min(w,h)<1080){URL.revokeObjectURL(url);return err(`This image is ${w} × ${h}. Wallpapers need at least 1080 px on the short side.`)}
+  upFile=f;upDims=[w,h];const pv=$('upPrev');pv.src=url;pv.hidden=false;
+  $('upFileT').textContent=f.name;$('upFileS').textContent=`${w} × ${h} · ${(f.size/1048576).toFixed(1)} MB`;
+  if(!$('upTitle').value.trim())$('upTitle').value=f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').slice(0,40)});
+$('upForm').addEventListener('submit',async e=>{e.preventDefault();const err=m=>{$('upErr').textContent=m;$('upErr').hidden=false};$('upErr').hidden=true;
+  if(!assets||!db||!me)return err('Uploading needs Contributor access to this page.');
+  if(!upFile)return err('Choose an image first.');
+  const title=$('upTitle').value.trim();if(!title)return err('Give your wallpaper a title.');
+  if(!$('upRights').checked)return err('Confirm that you own the rights to this image.');
+  const btn=$('upBtn');btn.disabled=true;btn.textContent='Uploading…';
+  try{const res=await assets.upload(upFile);
+    const wall={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),asset:res.id,title,cat:$('upCat').value,w:upDims[0],h:upDims[1],at:Date.now()};
+    await enqueue('creators/'+me,()=>{const c=creators[me]||{};return db.doc('creators/'+me).set({...c,walls:[wall,...(c.walls||[])],updatedAt:Date.now()})});
+    $('upForm').reset();resetUploadFile();toast('Uploaded. It’s live in Community now.');showView('community')}
+  catch(e){const m={too_large:'That image is too large. Keep it under 20 MB.',unsupported_type:'That file type isn’t supported. Use PNG, JPG or WebP.',
+      quota_or_state:'Storage for this app is full right now. Ask the owner to free up space.',rate_limited:'Too many uploads in a row. Wait a minute and try again.'}[e&&e.code];
+    err(m||'The upload didn’t go through. Check your connection and try again.')}
+  finally{btn.textContent='Upload wallpaper';renderUploadGate()}});
+
+/* earnings */
+function renderEarn(){if(view!=='earn')return;const body=$('earnBody');
+  if(comState!=='ready'||!me){body.innerHTML=`<p class="note">${comState==='loading'?'Loading your earnings…':comState==='offline'?'Earnings load when this page is opened in Claude while signed in.':'Sign in to Claude to see your earnings.'}</p>`;return}
+  const old=$('payUpi'),typed=old?old.value:null,focused=document.activeElement===old;
+  const st=counts(),b=balance(me,myPay,myLedger,st),walls=(creators[me]&&creators[me].walls)||[],can=b.available>=MIN_PAYOUT;
+  const rows=walls.map(w=>{const s=st[keyOf(me,w.id)]||{dl:0,like:0};return`<tr><td>${esc(w.title)}</td><td class="n">${s.dl}</td><td class="n">${s.like}</td><td class="n">${inr(earnOf(s))}</td></tr>`}).join('');
+  const reqRows=[...b.reqs].reverse().map(r=>`<tr><td>${fmtDate(r.at,1)}</td><td class="upi">${esc(r.upi)}</td><td class="n">${inr(r.amount)}</td><td>${b.paidIds.has(r.id)?'<span class="status paid">Paid</span>':'<span class="status pending">Pending</span>'}</td></tr>`).join('');
+  body.innerHTML=`<p class="note"><b>How you get paid:</b> each person who downloads your wallpaper earns you ${inr(RATE_DL)} once, and each like earns ${inr(RATE_LIKE)}. Your own downloads and likes don’t count. When your balance reaches ${inr(MIN_PAYOUT)}, request a payout and the app owner sends it to your UPI ID.</p>
+  <div class="tiles"><div class="tile hl"><span>Available</span><b>${inr(b.available)}</b></div><div class="tile"><span>Total earned</span><b>${inr(b.earned)}</b></div><div class="tile"><span>Pending payout</span><b>${inr(b.pending)}</b></div><div class="tile"><span>Paid to you</span><b>${inr(b.paid)}</b></div></div>
+  <h3 class="h3">Request a payout</h3>
+  <form class="payrow" id="payForm" novalidate><label class="fl" for="payUpi">UPI ID<input type="text" id="payUpi" placeholder="name@okaxis" autocomplete="off" value="${esc((myPay&&myPay.upi)||'')}"></label>
+  <button class="btn primary" type="submit"${can?'':' disabled'}>Request ${inr(b.available)}</button></form>
+  <p class="err" id="payErr" hidden></p>
+  ${can?'':`<p class="sub" style="margin:-10px 0 22px">You can request a payout once your available balance reaches ${inr(MIN_PAYOUT)}. ${inr(Math.max(0,MIN_PAYOUT-b.available))} to go.</p>`}
+  <h3 class="h3">Your wallpapers</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Wallpaper</th><th class="n">Downloads</th><th class="n">Likes</th><th class="n">Earned</th></tr></thead><tbody>${rows||'<tr><td class="empty-row" colspan="4">You haven’t uploaded anything yet. Open Upload &amp; earn to add your first wallpaper.</td></tr>'}</tbody></table></div>
+  <h3 class="h3">Payout history</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Requested</th><th>UPI ID</th><th class="n">Amount</th><th>Status</th></tr></thead><tbody>${reqRows||'<tr><td class="empty-row" colspan="4">No payout requests yet.</td></tr>'}</tbody></table></div>`;
+  if(typed!==null){const n=$('payUpi');n.value=typed;if(focused){n.focus();n.setSelectionRange(typed.length,typed.length)}}}
+$('earnBody').addEventListener('submit',async e=>{if(e.target.id!=='payForm')return;e.preventDefault();
+  const upi=$('payUpi').value.trim(),perr=m=>{$('payErr').textContent=m;$('payErr').hidden=false};
+  if(!/^[\w.\-]{2,256}@[a-zA-Z][a-zA-Z0-9.]{1,63}$/.test(upi))return perr('Enter a valid UPI ID, like name@okaxis.');
+  const b=balance(me,myPay,myLedger,counts());if(b.available<MIN_PAYOUT)return perr(`You need at least ${inr(MIN_PAYOUT)} available.`);
+  const req={id:Date.now().toString(36),amount:b.available,at:Date.now(),upi};
+  try{await enqueue('payouts/'+me,()=>db.doc('payouts/'+me).set({upi,requests:[...((myPay&&myPay.requests)||[]),req]}));toast(`Payout of ${inr(req.amount)} requested.`)}
+  catch(err){perr('The request didn’t go through. You may need Contributor access to this page.')}});
+
+/* owner: payouts */
+let adminRows=[];
+function renderAdmin(){if(view!=='admin'||!isOwner)return;
+  const st=counts(),body=$('adminBody'),rows=[];let pendingSum=0,paidSum=0,dl=0;
+  for(const[uid,p]of Object.entries(allPay)){const b=balance(uid,p,allLedger[uid],st);
+    for(const r of (p.requests||[]))if(!b.paidIds.has(r.id)){pendingSum+=+r.amount||0;rows.push({uid,r,b})}}
+  for(const L of Object.values(allLedger))for(const x of (L.paid||[]))paidSum+=+x.amount||0;
+  for(const k in st)dl+=st[k].dl;
+  rows.sort((a,b)=>a.r.at-b.r.at);adminRows=rows;
+  const nCreators=Object.values(creators).filter(c=>(c.walls||[]).length).length;
+  body.innerHTML=`<div class="tiles"><div class="tile hl"><span>To pay now</span><b>${inr(pendingSum)}</b></div><div class="tile"><span>Paid so far</span><b>${inr(paidSum)}</b></div><div class="tile"><span>Creators</span><b>${nCreators}</b></div><div class="tile"><span>Uploads · downloads</span><b>${comItems().length} · ${dl}</b></div></div>
+  <h3 class="h3">Pending requests</h3>
+  <div class="tbl-wrap"><table><thead><tr><th>Creator</th><th>UPI ID</th><th class="n">Amount</th><th class="n">Total earned</th><th>Requested</th><th></th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td data-uid="${esc(x.uid)}">${esc(nameFor(x.uid))}</td><td><span class="upi">${esc(x.r.upi)}</span> <button class="btn sm" type="button" data-copy="${esc(x.r.upi)}">Copy</button></td><td class="n">${inr(x.r.amount)}</td><td class="n">${inr(x.b.earned)}</td><td>${fmtDate(x.r.at)}</td><td><button class="btn sm primary" type="button" data-pay="${i}">Mark paid</button></td></tr>`).join('')||'<tr><td class="empty-row" colspan="6">No payout requests waiting.</td></tr>'}</tbody></table></div>
+  <p class="sub">Check that a creator’s total earned covers the request before you pay. Mark a request paid only after the UPI transfer succeeds; the creator sees the change right away.</p>`;
+  loadNames([...new Set(rows.map(x=>x.uid))]).then(()=>{for(const td of body.querySelectorAll('td[data-uid]'))td.textContent=nameFor(td.dataset.uid)})}
+$('adminBody').addEventListener('click',async e=>{
+  const c=e.target.closest('[data-copy]');
+  if(c){try{await navigator.clipboard.writeText(c.dataset.copy);toast('UPI ID copied.')}
+    catch(err){const s=getSelection(),r=document.createRange();r.selectNodeContents(c.previousElementSibling);s.removeAllRanges();s.addRange(r);toast('UPI ID selected. Copy it from the selection.')}return}
+  const p=e.target.closest('[data-pay]');if(!p)return;const x=adminRows[+p.dataset.pay];if(!x)return;p.disabled=true;
+  try{await enqueue('ledger/'+x.uid,()=>{const L=allLedger[x.uid]||{};return db.doc('ledger/'+x.uid).set({paid:[...(L.paid||[]),{id:x.r.id,amount:x.r.amount,at:Date.now()}]})});toast('Marked paid.')}
+  catch(err){p.disabled=false;toast('Couldn’t save that. Try again.')}});
+
+/* connect to the shared store */
+function rerenderCom(){renderCommunity();renderEarn();renderAdmin();renderUploadGate();if(vOpen&&vMode==='com')updateCom()}
+const onErr=e=>{if(e&&e.code==='revoked'){comState='offline';rerenderCom()}};
+const toMap=s=>{const o={};for(const x of s.docs)o[x.id]=x.data();return o};
+(async()=>{
+  if(!window.claude||typeof window.claude.use!=='function'){comState='offline';rerenderCom();return}
+  const[d,u]=await Promise.all([claude.use('db'),claude.use('user')]);db=d;userCap=u;
+  if(!db){comState='offline';rerenderCom();return}
+  try{me=u?await u.id():null}catch(e){me=null}
+  try{isOwner=u?!!(await u.isOwner()):false}catch(e){isOwner=false}
+  [assets,downloads]=await Promise.all([claude.use('assets'),claude.use('downloads')]);
+  document.querySelector('.tab[data-view="admin"]').hidden=!isOwner;
+  comState='ready';
+  db.collection('creators').onSnapshot(s=>{creators=toMap(s);rerenderCom()},onErr);
+  db.collection('acts').onSnapshot(s=>{acts=toMap(s);rerenderCom()},onErr);
+  if(me){db.doc('payouts/'+me).onSnapshot(x=>{myPay=x.exists?x.data():null;renderEarn()},onErr);
+    db.doc('ledger/'+me).onSnapshot(x=>{myLedger=x.exists?x.data():null;renderEarn()},onErr)}
+  if(isOwner){db.collection('payouts').onSnapshot(s=>{allPay=toMap(s);renderAdmin()},onErr);
+    db.collection('ledger').onSnapshot(s=>{allLedger=toMap(s);renderAdmin()},onErr)}
+  rerenderCom()})();
+try{const v=localStorage.getItem('glowwall-view');if(v&&v!=='admin'&&$('view-'+v))showView(v)}catch(e){}
 
 try{const f=localStorage.getItem('glowwall-filter');if(f&&CATS[f])filter=f}catch(e){}
 renderChips();renderGrid();requestAnimationFrame(loop);
