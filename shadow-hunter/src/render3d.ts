@@ -3,6 +3,9 @@ import type { Effect, Game, Guard } from "./game";
 import type { Hero } from "./heroes";
 import { Grid, TILE, Vec, mulberry32 } from "./map";
 
+/** The boss is a scaled-up guard. */
+const BOSS_SCALE = 1.55;
+
 /** Game coordinates are pixels with 32 px per tile; the 3D scene uses 1 unit per tile (x -> x, y -> z). */
 const S = 1 / TILE;
 const WALL_H = 1.15;
@@ -55,6 +58,9 @@ const MAT = {
   guardLegs: std(0x2f3a22),
   skin: std(0xe2b48d, 0.6),
   helmet: std(0x3c4b27, 0.5),
+  bossBody: std(0x7d1d22, 0.6),
+  bossLegs: std(0x2a0c0f, 0.7),
+  bossHelmet: std(0x16171b, 0.3, 0.6),
   metal: std(0x1d1e22, 0.4, 0.6),
   ninjaBody: std(0x22252e, 0.8),
   ninjaLegs: std(0x16181e, 0.85),
@@ -423,7 +429,20 @@ export class Renderer3D {
     // Shadows for every guard get expensive with big crowds.
     const shadows = game.guards.length <= 40;
     for (const g of game.guards) {
-      const person = makePerson("guard", shadows);
+      const person = makePerson("guard", shadows || g.boss);
+      if (g.boss) {
+        // Same build as a guard, in a red uniform with a black steel helmet.
+        const swap = new Map<THREE.Material, THREE.Material>([
+          [MAT.guardBody, MAT.bossBody],
+          [MAT.guardLegs, MAT.bossLegs],
+          [MAT.helmet, MAT.bossHelmet],
+        ]);
+        person.root.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh && swap.has(m.material as THREE.Material)) m.material = swap.get(m.material as THREE.Material)!;
+        });
+        person.root.scale.setScalar(BOSS_SCALE);
+      }
       const geo = new THREE.BufferGeometry();
       const verts = rays + 2;
       geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(verts * 3), 3));
@@ -463,6 +482,11 @@ export class Renderer3D {
         continue;
       }
       p.pivot.rotation.x = 0;
+      if (g.boss) {
+        // Red while stunned, then flicker while it can't be hit.
+        p.body.material = g.stunT > 0 ? MAT.hurt : MAT.bossBody;
+        p.root.visible = !(g.stunT <= 0 && g.invulnT > 0 && Math.floor(game.time * 14) % 2 === 0);
+      }
       const moved = Math.abs(g.stride - v.lastStride) > 0.01;
       v.lastStride = g.stride;
       v.moving += ((moved ? 1 : 0) - v.moving) * Math.min(1, dt * 10);
@@ -583,7 +607,7 @@ export class Renderer3D {
     this.camTarget.lerp(target, Math.min(1, dt * 6));
     // Stop at the map edges so the screen never shows the void past the outer wall.
     this.camTarget.x = Math.max(Math.min(4.6, g.w / 2), Math.min(g.w - Math.min(4.6, g.w / 2), this.camTarget.x));
-    this.camTarget.z = Math.max(6, Math.min(g.h - 5.2, this.camTarget.z));
+    this.camTarget.z = Math.max(7.6, Math.min(g.h - 5.2, this.camTarget.z));
     const sh = game.shake * 0.012;
     const cx = this.camTarget.x + (Math.random() - 0.5) * sh;
     const cz = this.camTarget.z + (Math.random() - 0.5) * sh;
@@ -611,8 +635,23 @@ export class Renderer3D {
     const H = this.overlay.height / dpr;
 
     for (const g of game.guards) {
+      if (!g.boss || g.state === "dead") continue;
+      // Boss health pips above its head.
+      const p = toCss(this.project(g.x * S, 2.45, g.y * S));
+      const pip = 12;
+      const gap = 3;
+      const total = g.maxHp * pip + (g.maxHp - 1) * gap;
+      ctx.fillStyle = "rgba(0,0,0,0.65)";
+      ctx.fillRect(p.x - total / 2 - 3, p.y - 3, total + 6, 12);
+      for (let i = 0; i < g.maxHp; i++) {
+        ctx.fillStyle = i < g.hp ? "#ff3b3b" : "#3a3f4d";
+        ctx.fillRect(p.x - total / 2 + i * (pip + gap), p.y, pip, 6);
+      }
+    }
+
+    for (const g of game.guards) {
       if (g.state !== "alert" && g.state !== "search") continue;
-      const p = toCss(this.project(g.x * S, 1.55, g.y * S));
+      const p = toCss(this.project(g.x * S, g.boss ? 2.85 : 1.55, g.y * S));
       if (p.x < -20 || p.y < -20 || p.x > W + 20 || p.y > H + 20) continue;
       const alert = g.state === "alert";
       ctx.fillStyle = alert ? "#ff3b3b" : "#ff9f2e";

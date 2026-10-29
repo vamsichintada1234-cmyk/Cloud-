@@ -1,5 +1,5 @@
 import { Sound } from "./audio";
-import { Game } from "./game";
+import { Game, isBossLevel } from "./game";
 import { DEFAULT_HERO, HEROES, Hero, heroBars, heroById } from "./heroes";
 import { Renderer3D, renderHeroPortraits } from "./render3d";
 
@@ -113,13 +113,23 @@ function startLevel(lv: number): void {
   app.classList.remove("in-menu");
   $("menu").classList.remove("show");
   $("end").classList.remove("show");
-  $("level").textContent = `LEVEL ${lv}`;
+  const boss = isBossLevel(lv);
+  $("level").textContent = boss ? `LEVEL ${lv} · BOSS` : `LEVEL ${lv}`;
   shownAlive = -1;
+  sound.setBossMode(boss && !params.bench);
+  const banner = $("banner");
+  banner.classList.remove("show");
+  if (boss && !params.bench) {
+    void banner.offsetWidth; // restart the animation
+    banner.classList.add("show");
+    sound.play("bossintro");
+  }
 }
 
 /** Main menu, with the first level drawn (frozen) behind it. */
 function showMenu(): void {
   mode = "menu";
+  sound.setBossMode(false);
   game = makeGame(params.level ?? 1);
   $("level").textContent = `LEVEL ${game.opts.level}`;
   shownAlive = -1;
@@ -333,9 +343,13 @@ function renderTargets(): void {
     return;
   }
   el.textContent = "";
-  for (let i = 0; i < total; i++) {
+  // Regular guards are crossed out left to right as they fall; the boss gets its own red head at the end.
+  const regularDown = game.guards.filter((g) => !g.boss && g.state === "dead").length;
+  let j = 0;
+  for (const g of game.guards) {
     const d = document.createElement("span");
-    d.className = i < total - alive ? "foe down" : "foe";
+    const down = g.boss ? g.state === "dead" : j++ < regularDown;
+    d.className = "foe" + (g.boss ? " boss" : "") + (down ? " down" : "");
     el.appendChild(d);
   }
 }
@@ -443,6 +457,10 @@ function frame(now: number): void {
   }
 
   renderTargets();
+  const boss = game.boss;
+  const bossBar = $("bossBar");
+  bossBar.hidden = !boss || boss.state === "dead" || mode === "menu";
+  if (boss) $("bossFill").style.width = `${(100 * boss.hp) / boss.maxHp}%`;
   // Once a level ends its gems are either banked (won) or forfeited (lost), so stop adding them.
   $("gems").textContent = `◆ ${bankedGems + (mode === "playing" ? game.gemsCollected : 0)}`;
 
@@ -453,7 +471,12 @@ function frame(now: number): void {
       bankedGems += game.gemsCollected;
       saveNumber("shadowHunter.gems", bankedGems);
       saveNumber("shadowHunter.level", Math.max(level + 1, loadNumber("shadowHunter.level")));
-      showEnd("Level complete", `${game.kills} targets eliminated · +${game.gemsCollected} gems`, "NEXT LEVEL", () => startLevel(level + 1));
+      showEnd(
+        game.boss ? "BOSS DEFEATED!" : "Level complete",
+        `${game.kills} targets eliminated · +${game.gemsCollected} gems`,
+        "NEXT LEVEL",
+        () => startLevel(level + 1),
+      );
     } else {
       showEnd("You were spotted", `Level ${level} · ${game.kills}/${game.guards.length} targets down`, "RETRY", () => startLevel(level));
     }

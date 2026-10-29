@@ -1,6 +1,6 @@
 import type { GameEvent } from "./game";
 
-export type SoundName = GameEvent | "click" | "buy" | "deny";
+export type SoundName = GameEvent | "click" | "buy" | "deny" | "bossintro";
 
 const MUSIC_KEY = "shadowHunter.music";
 const SFX_KEY = "shadowHunter.sfx";
@@ -49,6 +49,8 @@ export class Sound {
   private nextStep = 0;
   private step = 0;
   private gemPitch = 0;
+  /** Boss levels play the loop faster with a driving low stab. */
+  private bossMode = false;
   private lastGem = 0;
   private lastShot = 0;
 
@@ -96,6 +98,10 @@ export class Sound {
     this.musicGain.gain.setTargetAtTime(on ? 0.5 : 0, this.ctx.currentTime, 0.05);
     if (on) this.startMusic();
     else this.stopMusic();
+  }
+
+  setBossMode(on: boolean): void {
+    this.bossMode = on;
   }
 
   setSfx(on: boolean): void {
@@ -150,6 +156,23 @@ export class Sound {
         // Coins tumbling, then a bright chord.
         for (let i = 0; i < 6; i++) this.tone("sine", 1400 + i * 180, 2200 + i * 180, t + i * 0.035, 0.07, 0.12);
         [784, 988, 1175].forEach((f) => this.tone("triangle", f, f, t + 0.22, 0.4, 0.15));
+        break;
+      case "bossintro":
+        // Two low horn blasts.
+        this.tone("sawtooth", 82, 78, t, 0.6, 0.3, 500);
+        this.tone("sawtooth", 123, 117, t, 0.6, 0.18, 700);
+        this.tone("sawtooth", 73, 65, t + 0.7, 0.9, 0.32, 450);
+        this.tone("sawtooth", 110, 98, t + 0.7, 0.9, 0.18, 650);
+        break;
+      case "bosshit":
+        this.noiseBurst(t, 0.2, "bandpass", 3000, 600, 0.5);
+        this.tone("square", 220, 110, t, 0.12, 0.2, 2000);
+        this.tone("sine", 90, 40, t + 0.03, 0.3, 0.6);
+        break;
+      case "bossdown":
+        this.noiseBurst(t, 0.9, "lowpass", 3000, 120, 0.7);
+        this.tone("sine", 120, 30, t, 0.8, 0.7);
+        [392, 523, 659, 784, 1046].forEach((f, i) => this.tone("triangle", f, f, t + 0.45 + i * 0.08, 0.4, 0.22));
         break;
       case "deny":
         this.tone("square", 180, 150, t, 0.12, 0.14, 1200);
@@ -228,7 +251,7 @@ export class Sound {
 
   private schedule(): void {
     const ctx = this.ctx!;
-    const stepDur = 60 / 96 / 4;
+    const stepDur = 60 / (this.bossMode ? 122 : 96) / 4;
     while (this.nextStep < ctx.currentTime + 0.15) {
       this.playStep(this.step, this.nextStep, stepDur);
       this.nextStep += stepDur;
@@ -246,6 +269,11 @@ export class Sound {
     if (s === 4 || s === 12) this.noiseBurst(t, 0.12, "bandpass", 2000, 1200, 0.22, out);
     if (s % 2 === 1) this.noiseBurst(t, 0.04, "highpass", 8000, 7000, s % 4 === 3 ? 0.09 : 0.05, out);
     if (BASS_STEPS.includes(s)) this.tone("sawtooth", root, root, t, sd * 1.6, 0.2, 520, out);
+    if (this.bossMode) {
+      // Pounding eighth-note bass an octave down, plus a stab on every beat.
+      if (s % 2 === 0) this.tone("square", root / 2, root / 2, t, sd * 0.9, 0.12, 380, out);
+      if (s % 4 === 0) this.tone("sawtooth", root * 2, root * 2, t, sd * 0.6, 0.06, 1500, out);
+    }
     if (s % 2 === 0) {
       const n = chord[ARP_ORDER[(s / 2) % ARP_ORDER.length]];
       const f = semis(220 * 2, n);

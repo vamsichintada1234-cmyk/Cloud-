@@ -133,6 +133,79 @@
         transform: rotate(-45deg);
         border-radius: 2px;
       }
+      .foe.boss {
+        width: 16px;
+        height: 16px;
+        margin-top: -2px;
+        background: #e3263b;
+        box-shadow: 0 0 0 2px #16171b, 0 0 8px rgba(255, 59, 59, 0.8);
+      }
+      #bossBar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        letter-spacing: 0.14em;
+        color: #ff6b6b;
+        text-shadow: 0 1px 2px #000;
+      }
+      #bossBar[hidden] {
+        display: none;
+      }
+      #bossBar span {
+        width: 120px;
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(255, 90, 90, 0.5);
+        overflow: hidden;
+      }
+      #bossFill {
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #b3122a, #ff4a4a);
+        transition: width 0.25s;
+      }
+      #banner {
+        position: absolute;
+        z-index: 3;
+        left: 0;
+        right: 0;
+        top: 38%;
+        text-align: center;
+        font-size: 44px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        color: #ff3b3b;
+        text-shadow: 0 4px 0 #3d070e, 0 0 30px rgba(255, 40, 40, 0.7);
+        pointer-events: none;
+        opacity: 0;
+      }
+      #banner small {
+        display: block;
+        font-size: 15px;
+        letter-spacing: 0.5em;
+        color: #ffd0d0;
+      }
+      #banner.show {
+        animation: banner 2.4s ease-out forwards;
+      }
+      @keyframes banner {
+        0% {
+          opacity: 0;
+          transform: scale(1.6);
+        }
+        12%,
+        75% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+      }
       .gem {
         justify-self: end;
         color: #43e3ff;
@@ -435,9 +508,11 @@
         <div id="center">
           <span id="level">LEVEL 1</span>
           <div id="targets"></div>
+          <div id="bossBar" hidden><b>BOSS</b><span><i id="bossFill"></i></span></div>
         </div>
         <span class="gem" id="gems">◆ 0</span>
       </div>
+      <div id="banner"><small>WARNING</small>BOSS LEVEL</div>
       <div id="hint">Tap where to go · Sneak up behind guards · Stay out of the light</div>
       <pre id="bench"></pre>
 

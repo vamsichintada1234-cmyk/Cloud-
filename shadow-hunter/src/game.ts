@@ -6,6 +6,11 @@ export const GUARD_RADIUS = 11;
 const BULLET_SPEED = 560;
 const BULLET_DAMAGE = 25;
 
+/** Every fifth level is a boss level. */
+export function isBossLevel(level: number): boolean {
+  return level % 5 === 0;
+}
+
 export type GuardState = "patrol" | "alert" | "search" | "dead";
 
 export interface Guard {
@@ -23,6 +28,13 @@ export interface Guard {
   lookBase: number;
   lookT: number;
   stride: number;
+  /** Bosses take several hits; regular guards go down in one. */
+  boss: boolean;
+  hp: number;
+  maxHp: number;
+  /** After a hit the boss is briefly stunned, then can't be hit again for a moment. */
+  stunT: number;
+  invulnT: number;
 }
 
 export interface Player {
@@ -73,7 +85,7 @@ export interface Effect {
 export type Outcome = "playing" | "won" | "lost";
 
 /** Things that happened this frame, for sound effects. Drained by the caller. */
-export type GameEvent = "shot" | "kill" | "gem" | "alert" | "hurt" | "won" | "lost";
+export type GameEvent = "shot" | "kill" | "gem" | "alert" | "hurt" | "won" | "lost" | "bosshit" | "bossdown";
 
 export interface GameOptions {
   level: number;
@@ -124,6 +136,18 @@ export class Game {
     this.spawnGuards();
   }
 
+  get boss(): Guard | null {
+    return this.guards.find((g) => g.boss) ?? null;
+  }
+
+  /** How far a guard sees; the boss sees further and wider. */
+  rangeOf(g: Guard): number {
+    return g.boss ? this.visionRange * 1.3 : this.visionRange;
+  }
+  fovOf(g: Guard): number {
+    return g.boss ? this.halfFov * 1.3 : this.halfFov;
+  }
+
   get aliveGuards(): number {
     let n = 0;
     for (const g of this.guards) if (g.state !== "dead") n++;
@@ -140,8 +164,11 @@ export class Game {
       return Math.hypot(c.x - p.x, c.y - p.y) > minDist;
     });
     const pool = candidates.length >= this.opts.guards ? candidates : open;
+    const bossLevel = isBossLevel(this.opts.level);
+    // A boss level trades a couple of regular guards for the boss.
+    const regular = bossLevel ? Math.max(2, this.opts.guards - 2) : this.opts.guards;
     this.guards = [];
-    for (let k = 0; k < this.opts.guards; k++) {
+    for (let k = 0; k < regular; k++) {
       const idx = Math.floor(this.rng() * pool.length);
       const i = pool[idx];
       pool[idx] = pool[pool.length - 1];
@@ -164,6 +191,48 @@ export class Game {
         lookBase: a,
         lookT: this.rng() * 10,
         stride: 0,
+        boss: false,
+        hp: 1,
+        maxHp: 1,
+        stunT: 0,
+        invulnT: 0,
+      });
+    }
+    if (bossLevel && pool.length) {
+      // The boss waits as far from the player as possible.
+      let best = 0;
+      let bestD = -1;
+      for (let j = 0; j < pool.length; j++) {
+        const c = this.grid.center(pool[j] % this.grid.w, Math.floor(pool[j] / this.grid.w));
+        const d = Math.hypot(c.x - p.x, c.y - p.y);
+        if (d > bestD) {
+          bestD = d;
+          best = j;
+        }
+      }
+      const c = this.grid.center(pool[best] % this.grid.w, Math.floor(pool[best] / this.grid.w));
+      const hp = 3 + Math.floor(this.opts.level / 10);
+      const a = Math.atan2(p.y - c.y, p.x - c.x);
+      this.guards.push({
+        id: this.guards.length,
+        x: c.x,
+        y: c.y,
+        angle: a,
+        state: "patrol",
+        path: [],
+        wait: 1.5,
+        fireCd: 0,
+        lastSeen: null,
+        searchT: 0,
+        deadT: 0,
+        lookBase: a,
+        lookT: 0,
+        stride: 0,
+        boss: true,
+        hp,
+        maxHp: hp,
+        stunT: 0,
+        invulnT: 0,
       });
     }
   }
@@ -260,8 +329,8 @@ export class Game {
     const dy = target.y - g.y;
     const d = Math.hypot(dx, dy);
     // The hero's stealth shortens how far guards can spot them (the drawn cone stays the same).
-    if (d > this.visionRange * this.opts.hero.stealth) return false;
-    if (Math.abs(angleDiff(Math.atan2(dy, dx), g.angle)) > this.halfFov) return false;
+    if (d > this.rangeOf(g) * this.opts.hero.stealth) return false;
+    if (Math.abs(angleDiff(Math.atan2(dy, dx), g.angle)) > this.fovOf(g)) return false;
     return this.grid.castRay(g.x, g.y, dx / d, dy / d, d) >= d - 1;
   }
 
@@ -271,6 +340,20 @@ export class Game {
       return;
     }
     const p = this.player;
+    g.invulnT = Math.max(0, g.invulnT - dt);
+    if (g.stunT > 0) {
+      // Reeling from a hit: stagger, then turn to face where the player was.
+      g.stunT -= dt;
+      g.angle += Math.sin(this.time * 30) * 2 * dt;
+      if (g.stunT <= 0) {
+        g.angle = Math.atan2(p.y - g.y, p.x - g.x);
+        g.state = "search";
+        g.searchT = 0;
+        g.lastSeen = { x: p.x, y: p.y };
+        g.path = [];
+      }
+      return;
+    }
     const sees = this.canSee(g, p);
 
     if (sees) {
@@ -291,7 +374,7 @@ export class Game {
           g.fireCd -= dt;
           if (g.fireCd <= 0) {
             this.shoot(g);
-            g.fireCd = this.fireInterval;
+            g.fireCd = g.boss ? this.fireInterval * 1.8 : this.fireInterval;
           }
         } else {
           // Lost sight: run to where the player was last seen.
@@ -303,7 +386,7 @@ export class Game {
       }
       case "search": {
         if (g.path.length) {
-          this.followPath(g, this.alertSpeed, dt);
+          this.followPath(g, g.boss ? this.alertSpeed * 1.1 : this.alertSpeed, dt);
         } else {
           g.searchT += dt;
           g.angle += Math.sin(g.searchT * 3) * 3 * dt;
@@ -316,7 +399,7 @@ export class Game {
       }
       case "patrol": {
         if (g.path.length) {
-          this.followPath(g, this.patrolSpeed, dt);
+          this.followPath(g, g.boss ? this.patrolSpeed * 0.8 : this.patrolSpeed, dt);
         } else {
           g.wait -= dt;
           g.lookT += dt;
@@ -356,11 +439,14 @@ export class Game {
   }
 
   private shoot(g: Guard): void {
-    const spread = (this.rng() - 0.5) * 0.12;
-    const a = g.angle + spread;
-    const mx = g.x + Math.cos(a) * 16;
-    const my = g.y + Math.sin(a) * 16;
-    this.bullets.push({ x: mx, y: my, vx: Math.cos(a) * BULLET_SPEED, vy: Math.sin(a) * BULLET_SPEED, life: 1.2 });
+    // The boss fires a three-round spread.
+    const offsets = g.boss ? [-0.16, 0, 0.16] : [0];
+    for (const o of offsets) {
+      const a = g.angle + o + (this.rng() - 0.5) * 0.12;
+      const mx = g.x + Math.cos(a) * (g.boss ? 26 : 16);
+      const my = g.y + Math.sin(a) * (g.boss ? 26 : 16);
+      this.bullets.push({ x: mx, y: my, vx: Math.cos(a) * BULLET_SPEED, vy: Math.sin(a) * BULLET_SPEED, life: 1.2 });
+    }
     this.events.push("shot");
 
     // Gunfire draws nearby guards over to investigate.
@@ -379,18 +465,25 @@ export class Game {
     const p = this.player;
     for (const g of this.guards) {
       if (g.state === "dead") continue;
-      if (Math.hypot(g.x - p.x, g.y - p.y) > this.opts.hero.killRange) continue;
+      const reach = this.opts.hero.killRange + (g.boss ? 10 : 0);
+      if (Math.hypot(g.x - p.x, g.y - p.y) > reach) continue;
+      if (g.boss && g.invulnT > 0) continue;
+      if (g.boss && g.hp > 1) {
+        this.hitBoss(g);
+        continue;
+      }
+      g.hp = 0;
       g.state = "dead";
       g.deadT = 0;
       g.path = [];
       this.kills++;
-      this.events.push("kill");
+      this.events.push(g.boss ? "bossdown" : "kill");
       p.lungeT = 0.15;
       p.angle = Math.atan2(g.y - p.y, g.x - p.x);
       this.splats.push({ x: g.x, y: g.y, r: 10 + this.rng() * 8, seed: Math.floor(this.rng() * 1e9) });
       this.effects.push({ kind: "slash", x: g.x, y: g.y, angle: p.angle, t: 0 });
-      this.shake = Math.max(this.shake, 6);
-      const n = 3 + Math.floor(this.rng() * 3);
+      this.shake = Math.max(this.shake, g.boss ? 14 : 6);
+      const n = g.boss ? 25 + this.opts.level : 3 + Math.floor(this.rng() * 3);
       this.effects.push({ kind: "text", x: g.x, y: g.y - 18, angle: 0, t: 0, text: `+${n}` });
       for (let k = 0; k < n; k++) {
         const a = this.rng() * Math.PI * 2;
@@ -398,6 +491,44 @@ export class Game {
         this.gems.push({ x: g.x, y: g.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, t: 0 });
       }
     }
+  }
+
+  /** A blow that doesn't finish the boss: it staggers and the player is thrown back. */
+  private hitBoss(g: Guard): void {
+    const p = this.player;
+    g.hp--;
+    g.stunT = 0.7;
+    g.invulnT = 1.4;
+    g.path = [];
+    this.events.push("bosshit");
+    p.lungeT = 0.15;
+    p.angle = Math.atan2(g.y - p.y, g.x - p.x);
+    p.path = [];
+    this.effects.push({ kind: "slash", x: g.x, y: g.y, angle: p.angle, t: 0 });
+    this.splats.push({ x: g.x, y: g.y, r: 8 + this.rng() * 5, seed: Math.floor(this.rng() * 1e9) });
+    this.shake = Math.max(this.shake, 10);
+    // Throw the player straight back; if a wall is in the way, try angling off to either side.
+    const away = Math.atan2(p.y - g.y, p.x - g.x);
+    let best: Vec = { x: p.x, y: p.y };
+    let bestD = 0;
+    for (const turn of [0, 0.7, -0.7, 1.4, -1.4, 2.1, -2.1]) {
+      const a = away + turn;
+      const t = { x: p.x, y: p.y };
+      for (let i = 0; i < 12; i++) moveCircle(this.grid, t, Math.cos(a) * 4.5, Math.sin(a) * 4.5, PLAYER_RADIUS);
+      const d = Math.hypot(t.x - g.x, t.y - g.y);
+      if (d > bestD) {
+        bestD = d;
+        best = t;
+      }
+      if (d > TILE * 1.6) break;
+    }
+    p.x = best.x;
+    p.y = best.y;
+    for (let k = 0; k < 2; k++) {
+      const a = this.rng() * Math.PI * 2;
+      this.gems.push({ x: g.x, y: g.y, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90, t: 0 });
+    }
+    this.effects.push({ kind: "text", x: g.x, y: g.y - 18, angle: 0, t: 0, text: "+2" });
   }
 
   private updateBullets(dt: number): void {
@@ -458,11 +589,13 @@ export class Game {
   /** Vision cone outline as world-space points, clipped by walls. */
   visionPolygon(g: Guard, rays: number): number[] {
     const pts = [g.x, g.y];
+    const fov = this.fovOf(g);
+    const range = this.rangeOf(g);
     for (let i = 0; i <= rays; i++) {
-      const a = g.angle - this.halfFov + (2 * this.halfFov * i) / rays;
+      const a = g.angle - fov + (2 * fov * i) / rays;
       const dx = Math.cos(a);
       const dy = Math.sin(a);
-      const d = this.grid.castRay(g.x, g.y, dx, dy, this.visionRange);
+      const d = this.grid.castRay(g.x, g.y, dx, dy, range);
       pts.push(g.x + dx * d, g.y + dy * d);
     }
     return pts;
