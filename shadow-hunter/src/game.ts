@@ -71,6 +71,9 @@ export interface Effect {
 
 export type Outcome = "playing" | "won" | "lost";
 
+/** Things that happened this frame, for sound effects. Drained by the caller. */
+export type GameEvent = "shot" | "kill" | "gem" | "alert" | "hurt" | "won" | "lost";
+
 export interface GameOptions {
   level: number;
   guards: number;
@@ -95,6 +98,7 @@ export class Game {
   /** Bumped whenever the static wall layer must be redrawn. */
   mapVersion = 0;
   moveInput: Vec = { x: 0, y: 0 };
+  events: GameEvent[] = [];
 
   readonly visionRange: number;
   readonly halfFov = 0.62;
@@ -191,6 +195,7 @@ export class Game {
         this.spawnGuards();
       } else if (this.gems.length === 0) {
         this.outcome = "won";
+        this.events.push("won");
       }
     }
   }
@@ -267,6 +272,7 @@ export class Game {
     if (sees) {
       if (g.state !== "alert") {
         g.state = "alert";
+        this.events.push("alert");
         g.fireCd = Math.max(g.fireCd, 0.3);
         g.path = [];
       }
@@ -351,6 +357,7 @@ export class Game {
     const mx = g.x + Math.cos(a) * 16;
     const my = g.y + Math.sin(a) * 16;
     this.bullets.push({ x: mx, y: my, vx: Math.cos(a) * BULLET_SPEED, vy: Math.sin(a) * BULLET_SPEED, life: 1.2 });
+    this.events.push("shot");
 
     // Gunfire draws nearby guards over to investigate.
     const hear = TILE * 7;
@@ -373,6 +380,7 @@ export class Game {
       g.deadT = 0;
       g.path = [];
       this.kills++;
+      this.events.push("kill");
       p.lungeT = 0.15;
       p.angle = Math.atan2(g.y - p.y, g.x - p.x);
       this.splats.push({ x: g.x, y: g.y, r: 10 + this.rng() * 8, seed: Math.floor(this.rng() * 1e9) });
@@ -401,7 +409,11 @@ export class Game {
           p.hp = Math.max(0, p.hp - BULLET_DAMAGE);
           p.hurtT = 0.25;
           this.shake = Math.max(this.shake, 4);
-          if (p.hp === 0) this.outcome = "lost";
+          this.events.push("hurt");
+          if (p.hp === 0) {
+            this.outcome = "lost";
+            this.events.push("lost");
+          }
         }
         continue;
       }
@@ -428,6 +440,7 @@ export class Game {
         const s = 300 + gem.t * 500;
         if (d < 10) {
           this.gemsCollected++;
+          this.events.push("gem");
           continue;
         }
         gem.x += (dx / d) * Math.min(d, s * dt);

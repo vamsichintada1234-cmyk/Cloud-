@@ -1,11 +1,12 @@
+import { Sound } from "./audio";
 import { Game } from "./game";
-import { Renderer } from "./render";
+import { Renderer3D } from "./render3d";
 
 /**
  * URL options:
- *   ?level=N   level to start on (default: the last level played, or 1)
+ *   ?level=N   level the Start button opens (default 1)
  *   ?crowd=N   number of guards, overriding the level's default (1-2000)
- *   ?bench=S   benchmark mode: autopilot, invulnerable player, FPS overlay, runs for S seconds
+ *   ?bench=S   benchmark mode: skips the menu, autopilot, invulnerable player, FPS overlay, runs for S seconds
  *              (any truthy value means 15 s; empty, 0, false or off disables it)
  */
 interface Params {
@@ -34,12 +35,6 @@ function guardsForLevel(level: number): number {
   return Math.min(3 + Math.floor(level * 1.2), 24);
 }
 
-const params = parseParams();
-const canvas = document.getElementById("game") as HTMLCanvasElement;
-const renderer = new Renderer(canvas);
-const $ = (id: string) => document.getElementById(id)!;
-
-let game!: Game;
 function loadNumber(key: string): number {
   try {
     return Number(localStorage.getItem(key)) || 0;
@@ -55,64 +50,111 @@ function saveNumber(key: string, n: number): void {
   }
 }
 
-// The Android app opens without a ?level=, so pick up where the player left off.
-let level = params.level ?? Math.max(1, Math.min(999, loadNumber("shadowHunter.level")));
+const params = parseParams();
+const $ = (id: string) => document.getElementById(id)!;
+const app = $("app");
+const renderer = new Renderer3D(app);
+const sound = new Sound();
+
+type Mode = "menu" | "playing" | "ended";
+let mode: Mode = "menu";
+let game!: Game;
+let level = params.level ?? 1;
 let bankedGems = loadNumber("shadowHunter.gems");
 let shownAlive = -1;
 
-/** Enemy tracker: one head per guard (crossed out when down), or a count for big crowds. */
-function renderTargets(): void {
-  const alive = game.aliveGuards;
-  if (alive === shownAlive) return;
-  shownAlive = alive;
-  const el = $("targets");
-  const total = game.guards.length;
-  if (total > 24) {
-    el.textContent = `${alive} / ${total} left`;
-    return;
-  }
-  el.textContent = "";
-  for (let i = 0; i < total; i++) {
-    const d = document.createElement("span");
-    d.className = i < total - alive ? "foe down" : "foe";
-    el.appendChild(d);
-  }
-}
-
-function startLevel(lv: number): void {
-  level = lv;
-  if (!params.bench) saveNumber("shadowHunter.level", lv);
-  game = new Game({
+function makeGame(lv: number): Game {
+  return new Game({
     level: lv,
     guards: params.crowd ?? guardsForLevel(lv),
     autopilot: params.bench > 0,
     invulnerable: params.bench > 0,
   });
+}
+
+function startLevel(lv: number): void {
+  level = lv;
+  game = makeGame(lv);
   // Handy for poking at the game from devtools during development.
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
-  $("overlay").classList.remove("show");
+  mode = "playing";
+  app.classList.remove("in-menu");
+  $("menu").classList.remove("show");
+  $("end").classList.remove("show");
   $("level").textContent = `LEVEL ${lv}`;
   shownAlive = -1;
-  const q = new URLSearchParams(location.search);
-  q.set("level", String(lv));
-  history.replaceState(null, "", `${location.pathname}?${q.toString()}`);
 }
 
-function showOverlay(title: string, text: string, btn: string, action: () => void): void {
-  $("ovTitle").textContent = title;
-  $("ovText").textContent = text;
-  const b = $("ovBtn") as HTMLButtonElement;
-  b.textContent = btn;
-  b.onclick = action;
-  $("overlay").classList.add("show");
+/** Main menu, with the first level drawn (frozen) behind it. */
+function showMenu(): void {
+  mode = "menu";
+  game = makeGame(params.level ?? 1);
+  $("level").textContent = `LEVEL ${game.opts.level}`;
+  shownAlive = -1;
+  const saved = loadNumber("shadowHunter.level");
+  const cont = $("continueBtn") as HTMLButtonElement;
+  cont.hidden = saved <= 1 || params.level !== null;
+  cont.textContent = `Continue · Level ${saved}`;
+  $("end").classList.remove("show");
+  $("menu").classList.add("show");
+  app.classList.add("in-menu");
 }
+
+function showEnd(title: string, text: string, btn: string, action: () => void): void {
+  mode = "ended";
+  $("endTitle").textContent = title;
+  $("endText").textContent = text;
+  const b = $("endBtn") as HTMLButtonElement;
+  b.textContent = btn;
+  b.onclick = () => {
+    sound.play("click");
+    action();
+  };
+  $("end").classList.add("show");
+}
+
+// ---- Buttons ----
+$("startBtn").addEventListener("click", () => {
+  sound.unlock();
+  sound.play("click");
+  startLevel(params.level ?? 1);
+});
+$("continueBtn").addEventListener("click", () => {
+  sound.unlock();
+  sound.play("click");
+  startLevel(Math.max(1, loadNumber("shadowHunter.level")));
+});
+$("menuBtn").addEventListener("click", () => {
+  sound.play("click");
+  showMenu();
+});
+
+function syncToggles(): void {
+  $("musicBtn").setAttribute("aria-pressed", String(sound.musicOn));
+  $("sfxBtn").setAttribute("aria-pressed", String(sound.sfxOn));
+}
+$("musicBtn").addEventListener("click", () => {
+  sound.unlock();
+  sound.setMusic(!sound.musicOn);
+  sound.play("click");
+  syncToggles();
+});
+$("sfxBtn").addEventListener("click", () => {
+  sound.unlock();
+  sound.setSfx(!sound.sfxOn);
+  sound.play("click");
+  syncToggles();
+});
+syncToggles();
 
 // ---- Input ----
+const canvas = renderer.renderer.domElement;
 let pointerDown = false;
 let lastRetarget = 0;
 function target(e: PointerEvent): void {
-  if (params.bench) return;
+  if (params.bench || mode !== "playing") return;
   const w = renderer.toWorld(e.clientX, e.clientY);
+  if (!w) return;
   game.setTarget(w);
   renderer.marker = { x: w.x, y: w.y, t: 0 };
   $("hint").style.opacity = "0";
@@ -146,15 +188,35 @@ window.addEventListener("keydown", (e) => {
     keys.add(e.code);
     e.preventDefault();
     $("hint").style.opacity = "0";
-  } else if (e.code === "Enter" && $("overlay").classList.contains("show")) {
-    ($("ovBtn") as HTMLButtonElement).click();
+  } else if (e.code === "Enter") {
+    if (mode === "menu") ($("startBtn") as HTMLButtonElement).click();
+    else if (mode === "ended") ($("endBtn") as HTMLButtonElement).click();
   }
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
 window.addEventListener("blur", () => keys.clear());
 
-window.addEventListener("resize", () => renderer.resize());
+new ResizeObserver(() => renderer.resize()).observe(app);
 renderer.resize();
+
+/** Enemy tracker: one head per guard (crossed out when down), or a count for big crowds. */
+function renderTargets(): void {
+  const alive = game.aliveGuards;
+  if (alive === shownAlive) return;
+  shownAlive = alive;
+  const el = $("targets");
+  const total = game.guards.length;
+  if (total > 16) {
+    el.textContent = `${alive} / ${total} left`;
+    return;
+  }
+  el.textContent = "";
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement("span");
+    d.className = i < total - alive ? "foe down" : "foe";
+    el.appendChild(d);
+  }
+}
 
 // ---- Bench stats ----
 interface BenchResult {
@@ -175,7 +237,7 @@ let benchStart = 0;
 let benchDone = false;
 let updateMsSum = 0;
 let drawMsSum = 0;
-let fpsWindow: number[] = [];
+const fpsWindow: number[] = [];
 
 function benchResult(): BenchResult {
   const sorted = [...frameTimes].sort((a, b) => a - b);
@@ -196,15 +258,39 @@ function benchResult(): BenchResult {
   };
 }
 
-if (params.bench) {
-  renderer.fitWholeMap = true;
-  $("bench").style.display = "block";
-  $("hint").style.display = "none";
+function benchFrame(now: number, rawDt: number, updateMs: number, drawMs: number): void {
+  if (benchDone) return;
+  if (!benchStart) benchStart = now;
+  else {
+    frameTimes.push(rawDt);
+    updateMsSum += updateMs;
+    drawMsSum += drawMs;
+  }
+  fpsWindow.push(now);
+  while (fpsWindow.length && fpsWindow[0] < now - 1000) fpsWindow.shift();
+  const elapsed = (now - benchStart) / 1000;
+  const r = benchResult();
+  $("bench").textContent =
+    `BENCH  ${elapsed.toFixed(1)} / ${params.bench}s\n` +
+    `fps      ${fpsWindow.length}\n` +
+    `avg fps  ${r.avgFps}\n` +
+    `frame    ${r.avgFrameMs} ms (p95 ${r.p95FrameMs})\n` +
+    `update   ${r.avgUpdateMs} ms\n` +
+    `draw     ${r.avgDrawMs} ms\n` +
+    `guards   ${r.guards}   kills ${r.kills}\n` +
+    `map      ${r.map}`;
+  if (elapsed >= params.bench) {
+    benchDone = true;
+    (window as unknown as { __benchResult: BenchResult }).__benchResult = r;
+    console.log("BENCH " + JSON.stringify(r));
+    showEnd("Benchmark done", `${r.avgFps} fps avg · ${r.avgFrameMs} ms/frame · p95 ${r.p95FrameMs} ms · ${r.guards} guards`, "RUN AGAIN", () =>
+      location.reload(),
+    );
+  }
 }
 
 // ---- Main loop ----
 let last = performance.now();
-let ended = false;
 
 function frame(now: number): void {
   const rawDt = now - last;
@@ -220,72 +306,45 @@ function frame(now: number): void {
   game.moveInput = { x: mx, y: my };
 
   const t0 = performance.now();
-  game.update(dt);
+  // The menu shows the level frozen; play and end screens keep the world moving.
+  if (mode !== "menu") game.update(dt);
+  for (const e of game.events) sound.play(e);
+  game.events.length = 0;
   const t1 = performance.now();
   const rays = game.guards.length > 200 ? 8 : game.guards.length > 60 ? 14 : 24;
-  renderer.draw(game, rays, dt);
+  renderer.render(game, rays, mode === "menu" ? 0 : dt);
   const t2 = performance.now();
   if (renderer.marker) {
     renderer.marker.t += dt;
-    if (renderer.marker.t > 0.4) renderer.marker = null;
+    if (renderer.marker.t > 0.45) renderer.marker = null;
   }
 
   renderTargets();
   // Once a level ends its gems are either banked (won) or forfeited (lost), so stop adding them.
-  $("gems").textContent = `◆ ${bankedGems + (ended ? 0 : game.gemsCollected)}`;
+  $("gems").textContent = `◆ ${bankedGems + (mode === "playing" ? game.gemsCollected : 0)}`;
 
-  if (params.bench && !benchDone) {
-    if (!benchStart) benchStart = now;
-    else {
-      frameTimes.push(rawDt);
-      updateMsSum += t1 - t0;
-      drawMsSum += t2 - t1;
-    }
-    fpsWindow.push(now);
-    while (fpsWindow.length && fpsWindow[0] < now - 1000) fpsWindow.shift();
-    const elapsed = (now - benchStart) / 1000;
-    const r = benchResult();
-    $("bench").textContent =
-      `BENCH  ${elapsed.toFixed(1)} / ${params.bench}s\n` +
-      `fps      ${fpsWindow.length}\n` +
-      `avg fps  ${r.avgFps}\n` +
-      `frame    ${r.avgFrameMs} ms (p95 ${r.p95FrameMs})\n` +
-      `update   ${r.avgUpdateMs} ms\n` +
-      `draw     ${r.avgDrawMs} ms\n` +
-      `guards   ${r.guards}   kills ${r.kills}\n` +
-      `map      ${r.map}`;
-    if (elapsed >= params.bench) {
-      benchDone = true;
-      (window as unknown as { __benchResult: BenchResult }).__benchResult = r;
-      console.log("BENCH " + JSON.stringify(r));
-      showOverlay(
-        "Benchmark done",
-        `${r.avgFps} fps avg · ${r.avgFrameMs} ms/frame · p95 ${r.p95FrameMs} ms · ${r.guards} guards`,
-        "Run again",
-        () => location.reload(),
-      );
-    }
-  }
+  if (params.bench) benchFrame(now, rawDt, t1 - t0, t2 - t1);
 
-  if (!params.bench && !ended && game.outcome !== "playing") {
-    ended = true;
+  if (!params.bench && mode === "playing" && game.outcome !== "playing") {
     if (game.outcome === "won") {
       bankedGems += game.gemsCollected;
       saveNumber("shadowHunter.gems", bankedGems);
-      showOverlay("Level complete", `${game.kills} targets eliminated · +${game.gemsCollected} gems`, "Next level", () => {
-        ended = false;
-        startLevel(level + 1);
-      });
+      saveNumber("shadowHunter.level", Math.max(level + 1, loadNumber("shadowHunter.level")));
+      showEnd("Level complete", `${game.kills} targets eliminated · +${game.gemsCollected} gems`, "NEXT LEVEL", () => startLevel(level + 1));
     } else {
-      showOverlay("You were spotted", `Level ${level} · ${game.kills}/${game.guards.length} targets down`, "Retry", () => {
-        ended = false;
-        startLevel(level);
-      });
+      showEnd("You were spotted", `Level ${level} · ${game.kills}/${game.guards.length} targets down`, "RETRY", () => startLevel(level));
     }
   }
 
   requestAnimationFrame(frame);
 }
 
-startLevel(level);
+if (params.bench) {
+  renderer.fitWholeMap = true;
+  $("bench").style.display = "block";
+  $("hint").style.display = "none";
+  startLevel(params.level ?? 1);
+} else {
+  showMenu();
+}
 requestAnimationFrame(frame);

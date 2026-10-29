@@ -247,16 +247,16 @@ export interface LevelMap {
   spawn: Vec;
 }
 
-/** Builds a walled arena for a level. Bigger levels and bigger crowds get bigger maps. */
+/** Builds a tall (portrait) walled arena for a level. Bigger levels and bigger crowds get bigger maps. */
 export function generateMap(level: number, guardCount: number): LevelMap {
   const rng = mulberry32(level * 7919 + 17);
-  const aspect = 1.6;
+  const aspect = 1.6; // height / width
   const growth = Math.min(level, 12);
-  const baseW = 22 + growth;
-  const baseH = 14 + Math.round(growth * 0.6);
+  const baseW = 13 + Math.round(growth * 0.6);
+  const baseH = 21 + growth;
   const needed = guardCount * 40;
-  const h = Math.max(baseH, Math.ceil(Math.sqrt(needed / aspect)));
-  const w = Math.max(baseW, Math.ceil(h * aspect));
+  const w = Math.max(baseW, Math.ceil(Math.sqrt(needed / aspect)));
+  const h = Math.max(baseH, Math.ceil(w * aspect));
   const grid = new Grid(w, h);
 
   for (let x = 0; x < w; x++) {
@@ -268,7 +268,7 @@ export function generateMap(level: number, guardCount: number): LevelMap {
     grid.cells[y * w + w - 1] = 1;
   }
 
-  const spawnTx = 2;
+  const spawnTx = Math.floor(w / 2);
   const spawnTy = h - 3;
   const blocks = Math.floor((w * h) / 20);
   for (let b = 0; b < blocks; b++) {
