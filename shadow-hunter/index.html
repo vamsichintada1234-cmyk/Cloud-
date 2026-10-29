@@ -206,6 +206,33 @@
           transform: scale(0.95);
         }
       }
+      /* Small phones: keep "LEVEL 5 · BOSS" and the gem count on one line each. */
+      @media (max-width: 400px) {
+        #hud {
+          padding-left: 8px;
+          padding-right: 8px;
+        }
+        #toggles {
+          gap: 6px;
+        }
+        .toggle {
+          width: 38px;
+          height: 38px;
+        }
+        #level {
+          font-size: 13px;
+          letter-spacing: 0.08em;
+          padding: 4px 10px;
+        }
+        .gem {
+          font-size: 16px;
+          padding: 6px 9px;
+        }
+      }
+      #level,
+      .gem {
+        white-space: nowrap;
+      }
       .gem {
         justify-self: end;
         color: #43e3ff;

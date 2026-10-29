@@ -280,6 +280,8 @@ export class Renderer3D {
   marker: { x: number; y: number; t: number } | null = null;
   /** Show the whole map from above instead of following the player (bench mode). */
   fitWholeMap = false;
+  /** Camera distance multiplier when following the player (below 1 is closer). */
+  zoom = 1;
 
   constructor(private host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -611,7 +613,7 @@ export class Renderer3D {
     const sh = game.shake * 0.012;
     const cx = this.camTarget.x + (Math.random() - 0.5) * sh;
     const cz = this.camTarget.z + (Math.random() - 0.5) * sh;
-    this.camera.position.set(cx, 17, cz + 8.5);
+    this.camera.position.set(cx, 17 * this.zoom, cz + 8.5 * this.zoom);
     this.camera.lookAt(cx, 0, cz - 0.8);
     this.sun.position.set(cx - 5, 15, cz - 9);
     this.sun.target.position.set(cx, 0, cz - 1);
