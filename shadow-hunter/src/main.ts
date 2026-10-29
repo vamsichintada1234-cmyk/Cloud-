@@ -229,7 +229,8 @@ function frame(now: number): void {
   }
 
   renderTargets();
-  $("gems").textContent = `◆ ${bankedGems + game.gemsCollected}`;
+  // Once a level ends its gems are either banked (won) or forfeited (lost), so stop adding them.
+  $("gems").textContent = `◆ ${bankedGems + (ended ? 0 : game.gemsCollected)}`;
 
   if (params.bench && !benchDone) {
     if (!benchStart) benchStart = now;
