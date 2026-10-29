@@ -114,6 +114,19 @@ body {
 .list li .t { font: 500 14px/1 var(--mono); color: var(--amber); font-variant-numeric: tabular-nums; }
 .list li button { appearance: none; border: 0; background: transparent; color: var(--dim); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 4px; }
 .empty { font-size: 13px; color: var(--dim); }
+.list li.done .grow { color: var(--dim); text-decoration: line-through; }
+.list li input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--cyan); flex: none; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 62ch; }
+.actions:empty { display: none; }
+.action {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--cyan); color: var(--bg);
+  font: 600 14px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase;
+  text-decoration: none;
+}
+.action::after { content: "↗"; font-family: var(--body); }
 
 /* Core */
 .core { grid-area: core; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 0; min-width: 0; }
@@ -239,8 +252,8 @@ body {
   .rail { flex-direction: row; flex-wrap: wrap; gap: 12px 24px; overflow: visible; }
   .rail .block.clockblock { flex-direction: row; align-items: baseline; gap: 12px; }
   .clock { font-size: 32px; }
-  .rail .block.timers, .rail .block.memory { display: none; }
-  .rail.has-timers .block.timers { display: flex; flex: 1; min-width: 200px; }
+  .rail .block.timers, .rail .block.memory, .rail .block.tasks { display: none; }
+  .rail.has-timers .block.timers, .rail.has-tasks .block.tasks { display: flex; flex: 1; min-width: 200px; }
   .reactor { width: min(32vh, 100%, 360px); }
   .reply { font-size: 17px; max-height: 18vh; }
 }
@@ -270,8 +283,12 @@ body {
       <div class="date" id="date"></div>
     </div>
     <div class="block timers">
-      <div class="label">Timers</div>
+      <div class="label">Timers &amp; reminders</div>
       <ul class="list" id="timerList"></ul>
+    </div>
+    <div class="block tasks">
+      <div class="label">To-do</div>
+      <ul class="list" id="taskList"></ul>
     </div>
     <div class="block memory">
       <div class="label">Memory</div>
@@ -285,6 +302,7 @@ body {
       <div class="state" id="stateLabel">Standby</div>
     </div>
     <div class="reply" id="reply" aria-live="polite"></div>
+    <div class="actions" id="actions"></div>
   </main>
 
   <section class="log" aria-label="Conversation">
@@ -358,7 +376,8 @@ body {
     store.get("settings", {})
   );
   let memory = store.get("memory", []);           // [{text, at}]
-  let timers = [];                                // [{id, label, ends}]
+  let tasks = store.get("tasks", []);             // [{id, text, done}]
+  let timers = [];                                // [{id, label, ends, kind}]
   let turns = [];                                 // claude.ai mode: [{role, content}]
   let apiHistory = [];                            // API mode: full message objects
   let timerSeq = 1;
@@ -414,30 +433,93 @@ body {
     }
     $("rail").classList.toggle("has-timers", timers.length > 0);
   }
-  function addTimer(seconds, label) {
-    const t = { id: timerSeq++, label: label || "Timer", ends: Date.now() + seconds * 1000 };
-    t.handle = setTimeout(() => timerDone(t), seconds * 1000);
+  function saveTimers() { store.set("timers", timers.map(({ id, label, ends, kind }) => ({ id, label, ends, kind }))); }
+  function armTimer(t) {
+    // setTimeout drifts or caps on long waits; re-check every minute until close.
+    const left = t.ends - Date.now();
+    t.handle = setTimeout(() => (t.ends - Date.now() > 500 ? armTimer(t) : timerDone(t)), Math.min(Math.max(left, 0), 60000));
+  }
+  function addTimer(seconds, label, kind, endsAt) {
+    const t = { id: timerSeq++, label: label || "Timer", ends: endsAt || Date.now() + seconds * 1000, kind: kind || "timer" };
+    armTimer(t);
     timers.push(t);
+    saveTimers();
     renderTimers();
     return t;
+  }
+  function parseWhen(when) {
+    const s = String(when).trim();
+    const m = s.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/i);
+    if (m) {
+      let h = Number(m[1]) % 24;
+      const mer = (m[3] || "").toLowerCase();
+      if (mer === "pm" && h < 12) h += 12;
+      if (mer === "am" && h === 12) h = 0;
+      const d = new Date();
+      d.setHours(h, Number(m[2]), 0, 0);
+      if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+      return d.getTime();
+    }
+    const t = Date.parse(s);
+    return isNaN(t) ? null : t;
   }
   function cancelTimer(id) {
     const t = timers.find((x) => x.id === id);
     if (!t) return false;
     clearTimeout(t.handle);
     timers = timers.filter((x) => x.id !== id);
+    saveTimers();
     renderTimers();
     return true;
   }
   function timerDone(t) {
     timers = timers.filter((x) => x.id !== t.id);
+    saveTimers();
     renderTimers();
     chime();
-    const line = (settings.name ? settings.name + ", y" : "Y") + "our " + t.label.toLowerCase() + " timer is done.";
+    const line = t.kind === "reminder"
+      ? (settings.name ? settings.name + ", a" : "A") + " reminder: " + t.label + "."
+      : (settings.name ? settings.name + ", y" : "Y") + "our " + t.label.toLowerCase() + " timer is done.";
     log("jarvis", line);
     showReply(line);
     speak(line);
   }
+  function saveTasks() { store.set("tasks", tasks); renderTasks(); }
+  function renderTasks() {
+    const ul = $("taskList");
+    ul.innerHTML = "";
+    if (!tasks.length) { ul.innerHTML = '<li class="empty" style="border:0;background:none;padding:0">Say "add buy milk to my list".</li>'; }
+    for (const t of tasks) {
+      const li = document.createElement("li");
+      if (t.done) li.className = "done";
+      li.innerHTML = '<input type="checkbox" aria-label="Done"><span class="grow"></span><button aria-label="Delete task">×</button>';
+      li.querySelector("input").checked = t.done;
+      li.querySelector("input").onchange = (e) => { t.done = e.target.checked; saveTasks(); };
+      li.querySelector(".grow").textContent = t.text;
+      li.querySelector("button").onclick = () => { tasks = tasks.filter((x) => x !== t); saveTasks(); };
+      ul.appendChild(li);
+    }
+    $("rail").classList.toggle("has-tasks", tasks.some((t) => !t.done));
+  }
+  function findTask(ref) {
+    const r = String(ref).toLowerCase().trim();
+    return tasks.find((t) => String(t.id) === r) || tasks.find((t) => t.text.toLowerCase().includes(r));
+  }
+  const SAFE_SCHEMES = ["https:", "http:", "mailto:", "sms:", "tel:", "facetime:", "facetime-audio:", "maps:", "shortcuts:", "music:"];
+  function offerAction(label, url) {
+    let u;
+    try { u = new URL(url); } catch { throw new Error("That link is not valid."); }
+    if (!SAFE_SCHEMES.includes(u.protocol)) throw new Error("Links of type " + u.protocol + " are not allowed.");
+    const a = document.createElement("a");
+    a.className = "action";
+    a.href = u.href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = String(label || "Open").slice(0, 40);
+    $("actions").appendChild(a);
+    return { shown: true, note: "A button is on screen. The user must tap it; you cannot open it yourself." };
+  }
+
   function renderMemory() {
     const ul = $("memoryList");
     ul.innerHTML = "";
@@ -484,6 +566,72 @@ body {
       execute({ id }) { return { cancelled: cancelTimer(Number(id)) }; },
     },
     {
+      name: "set_reminder",
+      description: "Remind the user at a clock time today or tomorrow (e.g. '18:30', '7:05 pm') or an ISO date-time. Jarvis must be open on screen for the reminder to sound.",
+      inputSchema: { type: "object", properties: { when: { type: "string" }, text: { type: "string", description: "What to remind about" } }, required: ["when", "text"], additionalProperties: false },
+      execute({ when, text }) {
+        const at = parseWhen(when);
+        if (!at || at <= Date.now()) throw new Error("Could not understand the time '" + when + "'.");
+        const t = addTimer(0, text, "reminder", at);
+        return { id: t.id, at: new Date(t.ends).toLocaleString() };
+      },
+    },
+    {
+      name: "add_task",
+      description: "Add an item to the user's to-do list.",
+      inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false },
+      execute({ text }) {
+        const t = { id: tasks.reduce((m, x) => Math.max(m, x.id), 0) + 1, text: String(text).slice(0, 200), done: false };
+        tasks.push(t); saveTasks();
+        return t;
+      },
+    },
+    {
+      name: "list_tasks",
+      description: "List the to-do items with their ids and whether each is done.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      execute() { return tasks; },
+    },
+    {
+      name: "complete_task",
+      description: "Mark a to-do item done, by id or by words from its text.",
+      inputSchema: { type: "object", properties: { ref: { type: "string" } }, required: ["ref"], additionalProperties: false },
+      execute({ ref }) {
+        const t = findTask(ref);
+        if (!t) throw new Error("No to-do item matches '" + ref + "'.");
+        t.done = true; saveTasks();
+        return t;
+      },
+    },
+    {
+      name: "remove_task",
+      description: "Delete a to-do item by id or words from its text, or pass 'done' to clear all completed items.",
+      inputSchema: { type: "object", properties: { ref: { type: "string" } }, required: ["ref"], additionalProperties: false },
+      execute({ ref }) {
+        const before = tasks.length;
+        if (String(ref).toLowerCase() === "done") tasks = tasks.filter((t) => !t.done);
+        else { const t = findTask(ref); if (!t) throw new Error("No to-do item matches '" + ref + "'."); tasks = tasks.filter((x) => x !== t); }
+        saveTasks();
+        return { removed: before - tasks.length };
+      },
+    },
+    {
+      name: "open_link",
+      description: "Show a button the user can tap to open something: a website or search (https), YouTube, Apple Maps directions (https://maps.apple.com/?daddr=...), a phone call (tel:), a text message (sms:+15551234567&body=...), email (mailto:), or FaceTime (facetime:).",
+      inputSchema: { type: "object", properties: { label: { type: "string", description: "2-4 word button text" }, url: { type: "string" } }, required: ["label", "url"], additionalProperties: false },
+      execute({ label, url }) { return offerAction(label, url); },
+    },
+    {
+      name: "run_shortcut",
+      description: "Show a button that runs one of the user's Siri Shortcuts by exact name, optionally passing text input. Use for things only iPadOS can do: alarms, music, smart home, settings, sending messages automatically.",
+      inputSchema: { type: "object", properties: { name: { type: "string" }, input: { type: "string" } }, required: ["name"], additionalProperties: false },
+      execute({ name, input }) {
+        let url = "shortcuts://run-shortcut?name=" + encodeURIComponent(name);
+        if (input) url += "&input=text&text=" + encodeURIComponent(input);
+        return offerAction("Run " + name, url);
+      },
+    },
+    {
       name: "remember",
       description: "Save a fact or note about the user to long-term memory on this iPad.",
       inputSchema: { type: "object", properties: { text: { type: "string" } }, required: ["text"], additionalProperties: false },
@@ -523,7 +671,11 @@ body {
       "You are J.A.R.V.I.S., a personal AI assistant running on the user's iPad, in the spirit of Tony Stark's butler AI: calm, capable, quietly witty, unfailingly loyal. " +
       who +
       "\nYour replies are usually read aloud by text-to-speech, so: answer in one to three short spoken sentences unless the user asks for detail; no markdown, bullet points, emoji, code blocks or URLs unless asked; spell out symbols as words. " +
-      "Use your tools for the time and date, timers, and remembering things. You cannot browse the web, control other apps, or see the screen; if asked, say so briefly and offer what you can do instead. " +
+      "You get things done rather than explaining how. Use your tools: time and date, timers, reminders at a clock time, the to-do list, memory, " +
+      (brain === "api" ? "web search for anything current (news, weather, scores, prices, facts you are unsure of), " : "") +
+      "open_link to give the user a one-tap button for websites, searches, YouTube, directions, calls, texts, email and FaceTime, and run_shortcut to trigger their Siri Shortcuts for anything else on the iPad. " +
+      "You cannot tap buttons, open apps, or send messages yourself: offer the button and tell the user to tap it. " +
+      (brain === "api" ? "" : "You cannot search the web in this mode; for current information offer a search button with open_link. ") +
       "When the user tells you something worth keeping (preferences, names, plans), save it with remember." +
       mem
     );
@@ -554,7 +706,8 @@ body {
   async function apiLoop(text, onText, signal) {
     apiHistory.push({ role: "user", content: text });
     const apiTools = tools.map(({ name, description, inputSchema }) => ({ name, description, input_schema: inputSchema }));
-    for (let round = 0; round < 6; round++) {
+    apiTools.push({ type: "web_search_20260209", name: "web_search", max_uses: 3 }, { type: "web_fetch_20260209", name: "web_fetch", max_uses: 2 });
+    for (let round = 0; round < 10; round++) {
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         signal,
@@ -584,6 +737,7 @@ body {
       if (data.stop_reason === "refusal") return "I'm afraid I can't help with that one.";
       const said = data.content.filter((b) => b.type === "text").map((b) => b.text).join("").trim();
       if (said) onText(said);
+      if (data.stop_reason === "pause_turn") continue;  // server-side search still running
       if (data.stop_reason !== "tool_use") return said;
       const results = [];
       for (const b of data.content) {
@@ -631,6 +785,7 @@ body {
       return;
     }
     stopSpeaking();
+    $("actions").innerHTML = "";
     log("you", text);
     setBusy(true);
     setState("thinking");
@@ -939,7 +1094,14 @@ body {
     log("jarvis", line);
     showReply(line);
   }
+  for (const t of store.get("timers", [])) {
+    timerSeq = Math.max(timerSeq, t.id + 1);
+    if (t.ends > Date.now()) { timers.push(t); armTimer(t); }
+    else if (t.kind === "reminder") log("sys", "Missed reminder while Jarvis was closed: " + t.label);
+  }
+  saveTimers();
   renderMemory();
+  renderTasks();
   tick();
   setState("idle");
   greet();

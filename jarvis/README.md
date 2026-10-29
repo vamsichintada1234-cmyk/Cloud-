@@ -5,7 +5,15 @@ A J.A.R.V.I.S.-style voice assistant that runs in Safari on iPad and installs to
 - Talk to it with the mic button (Safari speech recognition), or type / use keyboard dictation.
 - Replies are spoken aloud with an iPad system voice (pick a British one such as Daniel in Settings).
 - Conversation mode keeps listening after each reply.
-- Built-in abilities: current time and date, countdown timers that chime and announce themselves, and a memory of things you ask it to remember (stored only on the iPad).
+- Things it can do for you:
+  - Time and date, countdown timers, and reminders at a clock time ("remind me at 7 pm to call mom"). They chime and speak when due, while Jarvis is open.
+  - A to-do list you manage by voice: add, tick off, delete.
+  - Memory of things you tell it, stored only on the iPad.
+  - Web search for news, weather, scores and facts (Home Screen version with an API key).
+  - One-tap buttons for websites, YouTube, Apple Maps directions, calls, texts, email and FaceTime.
+  - Running your Siri Shortcuts by name, which covers anything else iPadOS can do: alarms, music, smart home, settings, sending messages.
+
+Websites can't open apps or tap things on their own, so actions show as a button you tap once.
 
 ## Run it on your iPad
 
