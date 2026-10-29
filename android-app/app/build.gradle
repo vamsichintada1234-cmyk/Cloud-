@@ -1,0 +1,26 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.glowwall.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.glowwall.app"
+        minSdk 29
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    sourceSets {
+        // The web app lives in ../wallpaper-gallery; ship its index.html as the app's only asset.
+        main.assets.srcDirs += ["../../wallpaper-gallery"]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

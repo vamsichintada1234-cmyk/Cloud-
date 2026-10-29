@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A glowing orb in the brand gradient, centred in the 108dp adaptive-icon canvas. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:pathData="M54,54m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="sweep"
+                android:centerX="54"
+                android:centerY="54">
+                <item android:offset="0" android:color="#FF5BC0BE" />
+                <item android:offset="0.33" android:color="#FFB9A7FF" />
+                <item android:offset="0.66" android:color="#FFFF6F8F" />
+                <item android:offset="0.85" android:color="#FFEDAE49" />
+                <item android:offset="1" android:color="#FF5BC0BE" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

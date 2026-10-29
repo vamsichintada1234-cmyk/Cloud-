@@ -164,6 +164,8 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:13px;font-weight:600;width:max-content;max-width:calc(100% - 32px);text-align:center}
 .phone .vimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
 .vb.danger{color:var(--heart)}
+.steps{margin:0;padding-left:20px;font-size:13px;color:var(--fg);display:grid;gap:4px;align-self:stretch}
+.vb{min-width:50px}
 @media (prefers-reduced-motion:reduce){.card,.chip{transition:none}.pill::before{animation:none}}
 </style>
 
@@ -249,6 +251,7 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
     <button class="vb nav" id="cPrev" type="button"></button>
     <button class="vb" id="cLike" type="button" aria-pressed="false"></button>
     <button class="vb lock-t" id="cLock" type="button" aria-pressed="true"></button>
+    <button class="vb" id="cSet" type="button"></button>
     <button class="vb primary" id="cGet" type="button"></button>
     <button class="vb danger" id="cRemove" type="button" hidden></button>
     <button class="vb nav" id="cNext" type="button"></button>
@@ -259,6 +262,7 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
     <button class="vb" id="bColor" type="button"></button>
     <button class="vb" id="bRemix" type="button"></button>
     <button class="vb lock-t" id="bLock" type="button" aria-pressed="true"></button>
+    <button class="vb" id="bSet" type="button"></button>
     <button class="vb primary" id="bSave" type="button"></button>
     <button class="vb nav" id="bNext" type="button"></button>
   </div>
@@ -270,6 +274,19 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
       <img id="savedImg" alt="Rendered wallpaper ready to save">
       <p>Press and hold the image to save it to Photos. On a computer, right-click it and choose Save Image.</p>
       <div class="fname" id="savedName"></div>
+    </div>
+  </div>
+  <div class="sheet" id="setSheet" role="dialog" aria-labelledby="setH" hidden>
+    <div class="sheet-h"><h2 id="setH">Set as wallpaper</h2><button class="icon-btn" id="setClose" type="button" aria-label="Close"></button></div>
+    <p id="setNote"></p>
+    <div class="sizes" id="setTargets" hidden>
+      <button class="size" type="button" data-t="home"><b>Home screen</b><span>Behind your apps</span></button>
+      <button class="size" type="button" data-t="lock"><b>Lock screen</b><span>Under the clock</span></button>
+      <button class="size" type="button" data-t="both"><b>Both</b><span>Home and lock</span></button>
+    </div>
+    <div class="result" id="setResult" hidden>
+      <img id="setImg" alt="Wallpaper sized for your screen">
+      <ol class="steps" id="setSteps"></ol>
     </div>
   </div>
 </div>
@@ -504,6 +521,7 @@ const ICON={heart:sv(HEART),heartFill:sv(HEART,1),close:sv('<path d="M6 6l12 12M
   color:sv('<path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.5-.8 1.2-1.6-.4-1 .2-2.4 1.6-2.4H17a4 4 0 0 0 4-4c0-5.5-4-10-9-10z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>'),
   lock:sv('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
   save:sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  phone:sv('<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>'),
   plus:sv('<path d="M12 5v14M5 12h14"/>')};
 const vbHTML=(ic,label)=>`${ic}<span>${label}</span>`;
 $('bPrev').innerHTML=vbHTML(ICON.prev,'Prev');$('bNext').innerHTML=vbHTML(ICON.next,'Next');
@@ -577,7 +595,7 @@ let sx=null;
 $('phone').addEventListener('pointerdown',e=>{sx=e.clientX});
 $('phone').addEventListener('pointerup',e=>{if(sx===null)return;const dx=e.clientX-sx;sx=null;if(Math.abs(dx)>45)step(dx<0?1:-1)});
 document.addEventListener('keydown',e=>{if(!vOpen)return;
-  if(e.key==='Escape'){if(!sheet.hidden)closeSheet();else closeViewer()}
+  if(e.key==='Escape'){if(!sheet.hidden||!$('setSheet').hidden)closeSheet();else closeViewer()}
   else if(e.key==='ArrowRight')step(1);else if(e.key==='ArrowLeft')step(-1)});
 
 function tickClock(){const d=new Date();
@@ -589,7 +607,7 @@ tickClock();setInterval(tickClock,5000);
 const SIZES=[['iPhone 16 Pro Max',1320,2868],['iPhone 16 / 15',1179,2556],['Android QHD+',1440,3200],['4K phone',2160,3840],['iPad Pro 13″',2064,2752],['4K desktop',3840,2160]];
 $('sizes').innerHTML=SIZES.map((s,i)=>`<button class="size" type="button" data-i="${i}"><b>${s[0]}</b><span>${s[1]} × ${s[2]}</span></button>`).join('');
 let savedURL=null;
-function closeSheet(){sheet.hidden=true}
+function closeSheet(){sheet.hidden=true;$('setSheet').hidden=true}
 $('sClose').addEventListener('click',closeSheet);
 $('bSave').addEventListener('click',()=>{const it=vList[vIdx];
   $('sheetNote').textContent=GEN[it.g].live?'Live wallpapers save the frame showing right now. Pick a screen size; it is redrawn at full resolution.':'Pick a screen size. The wallpaper is redrawn at full resolution, so it stays sharp.';
@@ -597,7 +615,9 @@ $('bSave').addEventListener('click',()=>{const it=vList[vIdx];
 $('sizes').addEventListener('click',e=>{const b=e.target.closest('.size');if(!b)return;const[label,W,H]=SIZES[+b.dataset.i],it=vList[vIdx];
   const t=isLive(it)?now()+it.t0:it.t0+3;b.setAttribute('aria-busy','true');
   setTimeout(()=>{const c=document.createElement('canvas');c.width=W;c.height=H;drawItem(c.getContext('2d'),W,H,it,t);
-    c.toBlob(blob=>{b.removeAttribute('aria-busy');if(!blob)return;if(savedURL)URL.revokeObjectURL(savedURL);savedURL=URL.createObjectURL(blob);
+    c.toBlob(blob=>{b.removeAttribute('aria-busy');if(!blob)return;
+      if(NATIVE&&NATIVE.saveImage){const fname=`${nameOf(it).toLowerCase().replace(/\s+/g,'-')}-${W}x${H}.png`;
+        toB64(blob).then(b64=>{const r=String(NATIVE.saveImage(b64,fname));toast(r==='ok'?'Saved to your gallery in Pictures/Glowwall.':'Couldn’t save to your gallery.')});closeSheet();return}if(savedURL)URL.revokeObjectURL(savedURL);savedURL=URL.createObjectURL(blob);
       $('savedImg').src=savedURL;$('savedName').textContent=`${nameOf(it).toLowerCase().replace(/\s+/g,'-')}-${W}x${H}.png · ${(blob.size/1048576).toFixed(1)} MB`;
       $('result').hidden=false;$('result').scrollIntoView({block:'nearest'})},'image/png')},30)});
 
@@ -835,7 +855,45 @@ const toMap=s=>{const o={};for(const x of s.docs)o[x.id]=x.data();return o};
   if(isOwner){db.collection('payouts').onSnapshot(s=>{allPay=toMap(s);renderAdmin()},onErr);
     db.collection('ledger').onSnapshot(s=>{allLedger=toMap(s);renderAdmin()},onErr)}
   rerenderCom()})();
-try{const v=localStorage.getItem('glowwall-view');if(v&&v!=='admin'&&$('view-'+v))showView(v)}catch(e){}
+/* ---------- set as wallpaper: one tap inside the Android app, guided save on the web ---------- */
+const NATIVE=window.GlowwallNative||null;
+$('bSet').innerHTML=vbHTML(ICON.phone,'Set');$('cSet').innerHTML=vbHTML(ICON.phone,'Set');$('setClose').innerHTML=ICON.close;
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function screenPx(){if(NATIVE&&NATIVE.screenSize){const[w,h]=String(NATIVE.screenSize()).split(',').map(Number);if(w&&h)return[w,h]}
+  const d=Math.min(3,window.devicePixelRatio||1),a=Math.round(Math.min(screen.width,screen.height)*d),b=Math.round(Math.max(screen.width,screen.height)*d);return[a,b]}
+async function wallpaperBlob(it,type){
+  if(vMode==='com'){const r=await fetch(blobURL(it.w.asset));if(!r.ok)throw new Error('fetch');return r.blob()}
+  const[W,H]=screenPx(),c=document.createElement('canvas');c.width=W;c.height=H;drawItem(c.getContext('2d'),W,H,it,isLive(it)?now()+it.t0:it.t0+3);
+  return new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('encode')),type,.95))}
+const toB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
+let setURL=null;
+async function openSet(){const it=vList[vIdx];closeSheet();const S=$('setSheet');
+  const live=vMode==='gen'&&isLive(it);
+  if(NATIVE){$('setNote').textContent=live?'Live wallpapers are set as the frame showing right now. Where should it go?':'Where should it go?';
+    $('setTargets').hidden=false;$('setResult').hidden=true;S.hidden=false;S.querySelector('[data-t]').focus();return}
+  $('setTargets').hidden=true;$('setNote').textContent='Preparing it at your screen size…';$('setResult').hidden=true;S.hidden=false;
+  try{const b=await wallpaperBlob(it,'image/png');if(setURL)URL.revokeObjectURL(setURL);setURL=URL.createObjectURL(b);$('setImg').src=setURL;
+    const[W,H]=screenPx();
+    $('setNote').textContent=`Made for your screen (${W} × ${H}). A web page can’t change your wallpaper by itself, so finish in two steps:`;
+    $('setSteps').innerHTML=isIOS
+      ?'<li>Press and hold the image, then tap <b>Save to Photos</b>.</li><li>In Photos, open it, tap <b>Share</b>, then <b>Use as Wallpaper</b>.</li>'
+      :'<li>Press and hold the image, then tap <b>Download image</b>.</li><li>Open it in Gallery or Photos, tap <b>⋮</b>, then <b>Set as wallpaper</b>.</li><li>One-tap setting works in the Glowwall Android app.</li>';
+    $('setResult').hidden=false;if(vMode==='com')countDownload(it)}
+  catch(e){$('setNote').textContent='Couldn’t prepare the image. Try again.'}}
+$('bSet').addEventListener('click',openSet);$('cSet').addEventListener('click',openSet);
+$('setClose').addEventListener('click',closeSheet);
+$('setTargets').addEventListener('click',async e=>{const b=e.target.closest('[data-t]');if(!b||b.getAttribute('aria-busy'))return;const it=vList[vIdx];
+  for(const x of $('setTargets').querySelectorAll('[data-t]'))x.setAttribute('aria-busy','true');$('setNote').textContent='Setting your wallpaper…';
+  try{const b64=await toB64(await wallpaperBlob(it,'image/jpeg'));const res=String(NATIVE.setWallpaper(b64,b.dataset.t));
+    if(res!=='ok')throw new Error(res);if(vMode==='com')countDownload(it);
+    closeSheet();toast({home:'Home screen wallpaper set.',lock:'Lock screen wallpaper set.',both:'Wallpaper set on home and lock screens.'}[b.dataset.t])}
+  catch(err){$('setNote').textContent='Your phone didn’t accept the wallpaper. Try again, or use Save instead.'}
+  finally{for(const x of $('setTargets').querySelectorAll('[data-t]'))x.removeAttribute('aria-busy')}});
+
+// Inside the Android app there is no Claude runtime, so only the Originals work there.
+if(NATIVE&&!window.claude){$('tabs').hidden=true}
+else{try{const v=localStorage.getItem('glowwall-view');if(v&&v!=='admin'&&$('view-'+v))showView(v)}catch(e){}}
+window.__glowwallBack=()=>{if(!sheet.hidden||!$('setSheet').hidden){closeSheet();return true}if(vOpen){closeViewer();return true}return false};
 
 try{const f=localStorage.getItem('glowwall-filter');if(f&&CATS[f])filter=f}catch(e){}
 renderChips();renderGrid();requestAnimationFrame(loop);
