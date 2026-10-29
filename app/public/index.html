@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RefCut</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23ff4d6d'/><path d='M11 9l13 7-13 7z' fill='white'/></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="svgFilters"></defs></svg>
+
+<header class="topbar" id="topbar" hidden>
+  <button class="brand" id="homeLink" title="Home"><span class="logo">▶</span> RefCut</button>
+  <nav class="tabs" id="tabs" hidden>
+    <button data-tab="output" class="tab">Output</button>
+    <button data-tab="editor" class="tab">Editor</button>
+  </nav>
+  <div class="spacer"></div>
+  <button class="ghost small" id="newProject">New project</button>
+</header>
+
+<!-- 1. Home -->
+<section class="view" id="view-home">
+  <div class="hero">
+    <div class="logo big">▶</div>
+    <h1>RefCut</h1>
+    <p>Upload a reference edit and your raw clips. RefCut copies its cuts, transitions, colour and sound onto your footage.</p>
+    <button class="primary huge" id="startBtn">Start Your Editing</button>
+  </div>
+</section>
+
+<!-- 2. Setup -->
+<section class="view" id="view-setup" hidden>
+  <div class="setup">
+    <div class="setup-row">
+      <div class="card">
+        <h2>Upload your reference video</h2>
+        <label class="drop ref" id="refDrop">
+          <input type="file" accept="video/*" id="refInput" hidden>
+          <div class="drop-empty"><span class="plus">＋</span><span>Tap or drop the reference video</span></div>
+          <video class="drop-preview" muted playsinline loop hidden></video>
+          <div class="drop-bar"><i></i></div>
+          <div class="drop-name"></div>
+        </label>
+      </div>
+      <div class="card count-card">
+        <h2>How many clips?</h2>
+        <div class="stepper">
+          <button class="ghost" id="countMinus" aria-label="Fewer clips">−</button>
+          <input type="number" id="clipCount" min="1" max="50" value="5" inputmode="numeric">
+          <button class="ghost" id="countPlus" aria-label="More clips">+</button>
+        </div>
+        <p class="hint">Box 1 = first clip, box 2 = second clip, … in story order.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Your raw clips</h2>
+      <div class="clip-grid" id="clipGrid"></div>
+    </div>
+    <div class="actions">
+      <p class="hint" id="setupHint"></p>
+      <button class="primary huge" id="editBtn" disabled>Edit</button>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Output -->
+<section class="view" id="view-output" hidden>
+  <div class="output">
+    <video id="outVideo" controls playsinline></video>
+    <div class="output-side">
+      <h2>Your edit</h2>
+      <p class="hint" id="outInfo"></p>
+      <div class="col">
+        <a class="primary btn" id="downloadBtn" download>Download MP4</a>
+        <button class="secondary" id="openEditorBtn">Open Editor — change anything</button>
+      </div>
+      <h3>Versions</h3>
+      <ul class="versions" id="versions"></ul>
+      <h3>What was copied from the reference</h3>
+      <ul class="facts" id="facts"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Editor -->
+<section class="view" id="view-editor" hidden>
+  <div class="editor">
+    <div class="ed-main">
+      <div class="stage-wrap">
+        <div class="stage" id="stage"></div>
+        <div class="stage-hint">Drag the frame to move it · scroll / pinch to zoom</div>
+      </div>
+      <div class="transport">
+        <button class="ghost" id="playBtn" title="Play / pause (space)">▶</button>
+        <span class="time" id="timeLabel">0:00.0 / 0:00.0</span>
+        <div class="spacer"></div>
+        <button class="ghost small" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button>
+        <button class="ghost small" id="redoBtn" title="Redo (Ctrl+Shift+Z)">↷ Redo</button>
+        <button class="secondary small" id="draftBtn" title="Fast low-resolution render">Quick render</button>
+        <button class="primary small" id="renderBtn">Render final</button>
+      </div>
+    </div>
+    <aside class="inspector" id="inspector"></aside>
+    <div class="timeline-wrap">
+      <div class="tl-tools">
+        <button class="ghost small" id="splitBtn" title="Split at playhead (S)">✂ Split</button>
+        <button class="ghost small" id="dupBtn">⧉ Duplicate</button>
+        <button class="ghost small" id="leftBtn">◀ Move</button>
+        <button class="ghost small" id="rightBtn">Move ▶</button>
+        <button class="ghost small danger" id="delBtn">🗑 Delete</button>
+        <div class="spacer"></div>
+        <label class="mini">Zoom <input type="range" id="tlZoom" min="20" max="300" value="90"></label>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="ruler" id="ruler"></div>
+        <div class="track" id="track"></div>
+        <div class="playhead" id="playhead"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- progress overlay -->
+<div class="overlay" id="overlay" hidden>
+  <div class="progress-card">
+    <div class="spinner"></div>
+    <h2 id="progTitle">Editing…</h2>
+    <p id="progMsg"></p>
+    <div class="bar"><i id="progBar"></i></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -4,3 +4,4 @@ output/
 *.mp4
 *.MP4
 node_modules/
+app/data/

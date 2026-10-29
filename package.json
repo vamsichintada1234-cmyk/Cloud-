@@ -4,7 +4,8 @@
   "scripts": {
     "studio": "remotion studio",
     "render": "remotion render Hibro01 output/Hibro01_remotion.mp4",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "app": "node app/server.js"
   },
   "dependencies": {
     "@remotion/cli": "4.0.536",
