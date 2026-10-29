@@ -381,7 +381,7 @@ body {
     set(k, v) { try { localStorage.setItem("jarvis." + k, JSON.stringify(v)); } catch {} },
   };
   const settings = Object.assign(
-    { name: "", voices: {}, lang: "te", speak: true, hands: false, depth: "quick", apiKey: "" },
+    { name: "", voices: {}, lang: "te", speak: true, hands: true, depth: "quick", apiKey: "" },
     store.get("settings", {})
   );
   if (settings.voice) { settings.voices = Object.assign({ en: settings.voice }, settings.voices); delete settings.voice; }
@@ -965,12 +965,15 @@ body {
   /* ---------- voice in ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let rec = null, listening = false, heard = "";
+  let teluguEarFallback = false, retryListen = false;
+  const SITE = "https://vamsichintada1234-cmyk.github.io/Cloud-/jarvis/";
   function listen() {
     if (listening || busy) return;
     if (!SR) { micFallback(); return; }
     stopSpeaking();
     rec = new SR();
-    rec.lang = (LANGS[settings.lang] || LANGS.en).rec;
+    // Many iPads can't transcribe Telugu speech; Indian English still catches Tenglish.
+    rec.lang = settings.lang === "te" && teluguEarFallback ? "en-IN" : (LANGS[settings.lang] || LANGS.en).rec;
     rec.interimResults = true;
     rec.continuous = false;
     heard = "";
@@ -981,8 +984,18 @@ body {
       $("prompt").value = heard;
     };
     rec.onerror = (ev) => {
-      if (ev.error === "language-not-supported") { log("sys", "This iPad can't listen in " + rec.lang + " yet. Add it under Settings, General, Keyboard, Dictation Languages, or switch Language in Jarvis settings."); return; }
-      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") micFallback(true);
+      if (ev.error === "language-not-supported" && settings.lang === "te" && !teluguEarFallback) {
+        teluguEarFallback = true; retryListen = true;
+        log("sys", "This iPad can't listen in Telugu, so Jarvis is listening in Indian English. Speak in Tenglish; Jarvis still replies in Telugu.");
+        return;
+      }
+      if (ev.error === "language-not-supported") { log("sys", "This iPad can't listen in " + rec.lang + ". Switch Language in Jarvis settings."); return; }
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+        micFallback(true);
+        if (window.claude) log("sys", "Claude blocks the microphone. To talk directly, open " + SITE + " in Safari.");
+        else if (navigator.standalone) log("sys", "If the mic keeps failing from the Home Screen icon, open " + SITE + " in a Safari tab instead.");
+        else log("sys", "Allow the microphone: tap 'aA' in Safari's address bar, then Website Settings, then Microphone, Allow.");
+      }
       else if (ev.error !== "no-speech" && ev.error !== "aborted") log("sys", "Microphone: " + ev.error);
     };
     rec.onend = () => {
@@ -990,6 +1003,7 @@ body {
       $("micBtn").classList.remove("on");
       const said = heard.trim();
       $("prompt").value = "";
+      if (retryListen) { retryListen = false; listen(); return; }
       if (said) ask(said);
       else { setState("idle"); showReply(""); }
     };
