@@ -2,24 +2,45 @@ plugins {
     id "com.android.application"
 }
 
+// Release signing comes from android/keystore.properties (never committed):
+//   storeFile=/path/to/upload-keystore.jks
+//   storePassword=...
+//   keyAlias=upload
+//   keyPassword=...
+// Without it, release builds fall back to the debug key, which is fine for sideloading but not for Google Play.
+def keystoreFile = rootProject.file("keystore.properties")
+def keystore = new Properties()
+if (keystoreFile.exists()) keystoreFile.withInputStream { keystore.load(it) }
+
 android {
     namespace "com.shadowhunter.game"
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
-        applicationId "com.shadowhunter.game"
+        applicationId "com.vamsichintada.shadowhunter"
         minSdk 26
-        targetSdk 35
-        versionCode 4
-        versionName "4.0"
+        // Google Play requires new apps and updates to target Android 16 (API 36) from August 31, 2026.
+        targetSdk 36
+        versionCode 5
+        versionName "1.0.0"
+    }
+
+    signingConfigs {
+        if (keystoreFile.exists()) {
+            upload {
+                storeFile file(keystore["storeFile"])
+                storePassword keystore["storePassword"]
+                keyAlias keystore["keyAlias"]
+                keyPassword keystore["keyPassword"]
+            }
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt")
-            // Signed with the debug key so the APK can be sideloaded; use a real keystore for the Play Store.
-            signingConfig signingConfigs.debug
+            signingConfig keystoreFile.exists() ? signingConfigs.upload : signingConfigs.debug
         }
     }
 

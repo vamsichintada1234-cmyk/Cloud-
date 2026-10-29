@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "typecheck": "tsc --noEmit",
-    "apk": "npm run build && cd android && ./gradlew assembleRelease"
+    "apk": "npm run build && cd android && ./gradlew assembleRelease",
+    "aab": "npm run build && cd android && ./gradlew bundleRelease"
   },
   "devDependencies": {
     "@types/three": "0.170.0",
