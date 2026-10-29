@@ -159,6 +159,13 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 20px);z-index:80;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:14px;font-size:13px;font-weight:600;width:max-content;max-width:calc(100% - 32px);text-align:center}
 .phone .vimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
 .vb.danger{color:var(--heart)}
+.trend-block{margin-bottom:22px}
+.hrow{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.hrow::-webkit-scrollbar{display:none}
+.hrow .card{flex:none;width:112px}
+.rank{position:absolute;bottom:34px;left:8px;font-family:var(--display);font-weight:700;font-size:30px;line-height:1;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.actor-chips{padding-block:0}
+.chip .n{font-family:var(--mono);font-size:11px;opacity:.7;margin-left:4px}
 .buy{display:flex;flex-direction:column;gap:12px}
 .buy p{margin:0;font-size:13px;color:var(--muted)}
 .buy p.center{text-align:center;color:var(--fg)}
@@ -216,8 +223,11 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
   <section id="view-community" hidden>
     <div class="section-h">
       <div><h2 class="h">Community wallpapers</h2><p class="sub">Made by creators. Free ones download right away; paid ones unlock after payment.</p></div>
-      <select class="sortsel" id="comSort" aria-label="Sort community wallpapers"><option value="new">Newest</option><option value="top">Most downloaded</option><option value="free">Lowest price</option></select>
+      <select class="sortsel" id="comSort" aria-label="Sort community wallpapers"><option value="new">Newest</option><option value="trend">Trending</option><option value="top">Most downloaded</option><option value="free">Lowest price</option></select>
     </div>
+    <div class="trend-block" id="comTrend" hidden><h3 class="h3">Trending this week</h3><div class="hrow" id="trendRow"></div></div>
+    <div class="trend-block" id="comActors" hidden><h3 class="h3">Trending actors</h3><div class="chips actor-chips" id="actorChips"></div></div>
+    <h3 class="h3" id="comAllH" hidden>All wallpapers</h3>
     <div class="grid" id="comGrid"></div>
     <p class="empty" id="comEmpty">No uploads yet. Upload the first wallpaper and earn ₹1 for every download.</p>
   </section>
@@ -229,6 +239,7 @@ td.empty-row{color:var(--muted);text-align:center;white-space:normal;padding:22p
       <label class="fl" for="upPrice">Price<select id="upPrice"></select></label>
       <p class="sub" id="upShare" style="margin-top:-8px"></p>
       <label class="fl" for="upCat">Category<select id="upCat"></select></label>
+      <label class="fl" for="upActor" id="upActorL" hidden>Actor name<input type="text" id="upActor" maxlength="30" placeholder="e.g. the actor in your wallpaper" autocomplete="off"></label>
       <label class="fl" for="upTitle">Title (optional)<input type="text" id="upTitle" maxlength="40" placeholder="Uses the photo’s file name if left empty" autocomplete="off"></label>
       <label class="check" for="upRights"><input type="checkbox" id="upRights"><span>I made these images or own the rights to share them. Copied or copyrighted images are removed and earn nothing.</span></label>
       <input class="vh" type="file" id="upFile" accept="image/png,image/jpeg,image/webp" tabindex="-1" aria-hidden="true">
@@ -659,7 +670,7 @@ let resizeT;window.addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=
 /* ---------- creator marketplace: paid wallpapers, app commission, UPI checkout the owner confirms, creator payouts ---------- */
 const PRICES=[0,10,19,29,49,99,199];
 const DEFAULT_COMMISSION=20,MIN_PAYOUT=100;
-const COM_CATS=['Nature','Space','Abstract','Gradients','Neon','Anime','Cars','Minimal','Devotional','Other'];
+const COM_CATS=['Nature','Actors','Space','Abstract','Gradients','Neon','Anime','Cars','Minimal','Devotional','Other'];
 const inr=n=>'₹'+(Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const rs=n=>'₹'+(+n).toLocaleString('en-IN');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -724,29 +735,55 @@ function myOrderFor(key){const list=((myOrders&&myOrders.list)||[]).filter(o=>o.
 function orderState(o,deliv){if(!o)return null;const d=deliv||{};
   if(d.items&&d.items[o.key]&&d.items[o.key].orderId===o.id)return'paid';if(d.rejected&&d.rejected[o.id])return'rejected';return'pending'}
 
+/* trending: recent downloads and likes count most, fading over about four days; creators' own actions never count */
+function trendScores(){const now=Date.now(),s={};
+  const add=(k,uid,t,w)=>{if(ownerOfKey(k)===uid)return;const age=(now-(+t||0))/864e5;if(age<0||age>14)return;s[k]=(s[k]||0)+w*Math.exp(-age/4)};
+  for(const[uid,a]of Object.entries(acts)){for(const k in (a.dl||{}))add(k,uid,a.dl[k],1);for(const k in (a.like||{}))if(a.like[k])add(k,uid,a.like[k],.6)}
+  return s}
+const actorKey=n=>String(n||'').toLowerCase().replace(/\s+/g,' ').trim();
+const titleCase=n=>String(n).trim().replace(/\s+/g,' ').replace(/\b\p{L}/gu,c=>c.toUpperCase());
+let comActor='';
+
 /* community grid */
 let comList=[];
+function comCard(it,list,i,rank){const b=document.createElement('button');b.type='button';b.className='card';
+  const p=priceOf(it),own=p&&fullURL(it);
+  b.setAttribute('aria-label',`${it.w.title} by ${nameFor(it.uid)}, ${p?rs(p):'free'}`);
+  b.innerHTML=`<img loading="lazy" alt="" src="${previewURL(it)}"><span class="pill plain">${p?(own?'Owned':rs(p)):'Free'}</span>${rank?`<span class="rank">${rank}</span>`:''}<span class="card-meta"><span class="card-stack"><span class="card-name">${esc(it.w.title)}</span><span class="card-by" data-uid="${esc(it.uid)}">${esc(it.w.actor?it.w.actor:nameFor(it.uid))}</span></span></span>`;
+  if(it.w.actor)b.querySelector('.card-by').removeAttribute('data-uid');
+  b.querySelector('img').addEventListener('error',e=>{e.target.style.visibility='hidden'});
+  b.addEventListener('click',()=>openViewer(i,list,'com'));return b}
+function renderTrending(all,ts){
+  const top=all.filter(it=>ts[it.key]>0).sort((a,b)=>ts[b.key]-ts[a.key]).slice(0,10);
+  $('comTrend').hidden=!top.length||!!comActor;const row=$('trendRow');row.innerHTML='';
+  top.forEach((it,i)=>row.appendChild(comCard(it,top,i,i+1)));
+  const actors={};for(const it of all){if(!it.w.actor)continue;const k=actorKey(it.w.actor);
+    const a=actors[k]||(actors[k]={k,name:titleCase(it.w.actor),n:0,score:0});a.n++;a.score+=ts[it.key]||0}
+  const list=Object.values(actors).sort((a,b)=>b.score-a.score||b.n-a.n).slice(0,15);
+  $('comActors').hidden=!list.length;
+  $('actorChips').innerHTML=(comActor?'<button class="chip" type="button" data-actor="">All</button>':'')+list.map(a=>`<button class="chip" type="button" data-actor="${esc(a.k)}" aria-pressed="${a.k===comActor}">${esc(a.name)}<span class="n">${a.n}</span></button>`).join('');
+  const sel=list.find(a=>a.k===comActor);
+  $('comAllH').hidden=!top.length&&!list.length;$('comAllH').textContent=sel?`${sel.name} wallpapers`:'All wallpapers';
+  fillNames(row)}
+$('actorChips').addEventListener('click',e=>{const b=e.target.closest('[data-actor]');if(!b)return;comActor=b.dataset.actor===comActor?'':b.dataset.actor;renderCommunity()});
 function renderCommunity(){if(view!=='community')return;
-  const st=counts(),L=comItems();
-  if($('comSort').value==='top')L.sort((a,b)=>((st[b.key]||{}).dl||0)-((st[a.key]||{}).dl||0)||b.w.at-a.w.at);
+  const st=counts(),ts=trendScores(),all=comItems();renderTrending(all,ts);
+  const L=comActor?all.filter(it=>actorKey(it.w.actor)===comActor):all.slice();
+  if($('comSort').value==='trend')L.sort((a,b)=>(ts[b.key]||0)-(ts[a.key]||0)||b.w.at-a.w.at);
+  else if($('comSort').value==='top')L.sort((a,b)=>((st[b.key]||{}).dl||0)-((st[a.key]||{}).dl||0)||b.w.at-a.w.at);
   else if($('comSort').value==='free')L.sort((a,b)=>priceOf(a)-priceOf(b)||b.w.at-a.w.at);
   else L.sort((a,b)=>b.w.at-a.w.at);
   comList=L;const g=$('comGrid');g.innerHTML='';
   const empty=$('comEmpty');
   empty.textContent=comState==='offline'?'Community wallpapers load when this page is opened in Claude while signed in.':comState==='loading'?'Loading community wallpapers…':'No wallpapers yet. Upload the first one and set your price.';
   empty.hidden=L.length>0;
-  L.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='card';
-    const p=priceOf(it),own=p&&fullURL(it);
-    b.setAttribute('aria-label',`${it.w.title} by ${nameFor(it.uid)}, ${p?rs(p):'free'}`);
-    b.innerHTML=`<img loading="lazy" alt="" src="${previewURL(it)}"><span class="pill plain">${p?(own?'Owned':rs(p)):'Free'}</span><span class="card-meta"><span class="card-stack"><span class="card-name">${esc(it.w.title)}</span><span class="card-by" data-uid="${esc(it.uid)}">${esc(nameFor(it.uid))}</span></span></span>`;
-    b.querySelector('img').addEventListener('error',e=>{e.target.style.visibility='hidden'});
-    b.addEventListener('click',()=>openViewer(i,comList,'com'));g.appendChild(b)});
+  L.forEach((it,i)=>g.appendChild(comCard(it,comList,i)));
   fillNames(g)}
 $('comSort').addEventListener('change',renderCommunity);
 
 /* community viewer */
 function comMeta(it){const st=counts()[it.key]||{dl:0,like:0},p=priceOf(it);
-  return`BY ${nameFor(it.uid).toUpperCase()} · ${p?rs(p):'FREE'} · ${st.dl} DOWNLOADS · ${st.like} LIKES`}
+  return`${it.w.actor?esc(it.w.actor).toUpperCase()+' · ':''}BY ${nameFor(it.uid).toUpperCase()} · ${p?rs(p):'FREE'} · ${st.dl} DOWNLOADS · ${st.like} LIKES`}
 function updateCom(){const it=vList[vIdx];if(!it)return;
   const full=fullURL(it),img=$('vImg'),src=full||previewURL(it);if(img.getAttribute('src')!==src)img.src=src;img.alt=it.w.title;
   $('vName').textContent=it.w.title;$('vMeta').textContent=comMeta(it);
@@ -833,12 +870,14 @@ $('buyBody').addEventListener('submit',async e=>{if(e.target.id!=='buyForm')retu
 /* upload */
 function renderUploadGate(){const g=$('upGate');let msg='';const pct=commissionPct();
   $('rateLine').textContent=`Free wallpapers help people find you. Paid ones sell through the app: you keep ${100-pct}% of every sale and the app keeps ${pct}%. Request a payout to your UPI ID once you reach ${inr(MIN_PAYOUT)}.`;
+  const actorCat=$('upCat').value==='Actors';$('upActorL').hidden=!actorCat;
+  if(actorCat){$('upPrice').value='0';$('upPrice').disabled=true}else $('upPrice').disabled=false;
   const p=+$('upPrice').value||0;
-  $('upShare').textContent=p?`Buyers pay ${rs(p)}. You get ${inr(creatorNet(p,pct))} per sale after the ${pct}% app commission.${salesOpen()?'':' Sales open once the owner adds a UPI ID.'} Buyers see a watermarked preview until they pay.`:'Anyone can download it for free.';
+  $('upShare').textContent=actorCat?'Actor wallpapers are free to download. Selling photos of real people needs their permission, so they can’t be paid. Upload only your own edits or photos you have the right to share.':p?`Buyers pay ${rs(p)}. You get ${inr(creatorNet(p,pct))} per sale after the ${pct}% app commission.${salesOpen()?'':' Sales open once the owner adds a UPI ID.'} Buyers see a watermarked preview until they pay.`:'Anyone can download it for free.';
   if(comState==='offline')msg='Uploading works when this page is opened in Claude while signed in.';
   else if(comState==='ready'&&(!assets||!me))msg='<b>Uploading needs Contributor access.</b> Ask the owner of this page to share it with you as a Contributor, then reload.';
   g.innerHTML=msg;g.hidden=!msg;$('upBtn').disabled=!!msg||comState!=='ready'}
-$('upPrice').addEventListener('change',renderUploadGate);
+$('upPrice').addEventListener('change',renderUploadGate);$('upCat').addEventListener('change',renderUploadGate);
 try{$('upRights').checked=localStorage.getItem('glowwall-rights')==='1'}catch(e){}
 $('upRights').addEventListener('change',()=>{try{localStorage.setItem('glowwall-rights',$('upRights').checked?'1':'0')}catch(e){}});
 function readDims(f){return new Promise((ok,no)=>{const url=URL.createObjectURL(f),img=new Image();
@@ -855,6 +894,7 @@ async function makePreview(file,w,h){const src=URL.createObjectURL(file),img=new
 const upErr=m=>{$('upErr').textContent=m;$('upErr').hidden=!m};
 // Upload opens the photo picker straight away; picking a photo uploads it.
 $('upForm').addEventListener('submit',e=>{e.preventDefault();upErr('');
+  if($('upCat').value==='Actors'&&!$('upActor').value.trim())return upErr('Type the actor’s name first, then tap Upload.');
   if(!assets||!db||!me)return upErr('Uploading needs Contributor access to this page.');
   if(!$('upRights').checked)return upErr('Tick the box to confirm you own the rights, then tap Upload again.');
   $('upFile').value='';$('upFile').click()});
@@ -864,9 +904,11 @@ $('upFile').addEventListener('change',async()=>{const f=$('upFile').files[0];if(
   let dims;try{dims=await readDims(f)}catch(e){return upErr('That photo couldn’t be read. Pick a different one.')}
   if(Math.min(dims[0],dims[1])<1080)return upErr(`This photo is ${dims[0]} × ${dims[1]}. Wallpapers need at least 1080 px on the short side.`);
   const title=$('upTitle').value.trim()||f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').trim().slice(0,40)||'Untitled';
-  const price=+$('upPrice').value||0,btn=$('upBtn');btn.disabled=true;btn.textContent='Uploading…';
+  const actorCat=$('upCat').value==='Actors',actor=actorCat?titleCase($('upActor').value).slice(0,30):'';
+  if(actorCat&&!actor)return upErr('Type the actor’s name so people can find this wallpaper.');
+  const price=actorCat?0:(+$('upPrice').value||0),btn=$('upBtn');btn.disabled=true;btn.textContent='Uploading…';
   try{const full=await assets.upload(f);
-    const wall={id:newId(),title,cat:$('upCat').value,w:dims[0],h:dims[1],at:Date.now(),price};
+    const wall={id:newId(),title,cat:$('upCat').value,w:dims[0],h:dims[1],at:Date.now(),price};if(actor)wall.actor=actor;
     if(price){const prev=await assets.upload(await makePreview(f,dims[0],dims[1]),{contentType:'image/jpeg'});wall.preview=prev.id;
       // The full file's id stays in the creator's vault, readable only by them and the owner, until someone buys it.
       await enqueue('vault/'+me,()=>{const v=myVault||{};return db.doc('vault/'+me).set({walls:{...(v.walls||{}),[wall.id]:full.id}})})}
